@@ -1,0 +1,756 @@
+<!DOCTYPE html>
+
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>⚔️ Foundry Legion Tracker</title>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --ice:#a8d8ea;--frost:#5bb8d4;--deep:#0d1b2a;--navy:#1a2f4a;--panel:#162338;
+    --gold:#f0c040;--green:#3dd68c;--red:#e05555;--purple:#9b6dff;
+    --border:rgba(91,184,212,0.25);
+    --g1:#4a9eff;--g2:#e05555;--g3:#3dd68c;--g4:#f0c040;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{background:var(--deep);color:#cce8f4;font-family:'Rajdhani',sans-serif;font-size:16px;min-height:100vh;
+    background-image:radial-gradient(ellipse at 20% 0%,rgba(91,184,212,0.08) 0%,transparent 60%),
+    radial-gradient(ellipse at 80% 100%,rgba(155,109,255,0.06) 0%,transparent 60%);}
+  header{background:linear-gradient(135deg,#0d1b2a,#1a2f4a);border-bottom:2px solid var(--frost);
+    padding:18px 20px 14px;text-align:center;position:sticky;top:0;z-index:100;box-shadow:0 4px 24px rgba(0,0,0,0.5);}
+  header h1{font-family:'Orbitron',monospace;font-size:1.3rem;font-weight:900;color:var(--gold);
+    letter-spacing:2px;text-shadow:0 0 20px rgba(240,192,64,0.4);}
+  header p{font-size:0.8rem;color:var(--frost);margin-top:3px;letter-spacing:1px;text-transform:uppercase;}
+  .tabs{display:flex;border-bottom:2px solid var(--border);background:var(--navy);
+    position:sticky;top:72px;z-index:99;overflow-x:auto;}
+  .tab{flex:1;min-width:55px;padding:11px 5px;text-align:center;cursor:pointer;
+    font-family:'Orbitron',monospace;font-size:0.55rem;letter-spacing:0.8px;color:#6a9cb8;
+    border-bottom:3px solid transparent;transition:all 0.2s;text-transform:uppercase;white-space:nowrap;}
+  .tab.active{color:var(--gold);border-bottom-color:var(--gold);background:rgba(240,192,64,0.05);}
+  .tab:hover:not(.active){color:var(--ice);background:rgba(255,255,255,0.03);}
+  .page{display:none;padding:16px;max-width:700px;margin:0 auto;}
+  .page.active{display:block;}
+
+/* FORM */
+.form-card{background:var(–panel);border:1px solid var(–border);border-radius:12px;padding:20px;margin-bottom:16px;}
+.form-card h2{font-family:‘Orbitron’,monospace;font-size:0.85rem;color:var(–frost);letter-spacing:2px;
+margin-bottom:16px;text-transform:uppercase;display:flex;align-items:center;gap:8px;}
+.field{margin-bottom:14px;}
+.field label{display:block;font-size:0.8rem;color:var(–ice);margin-bottom:5px;font-weight:600;
+letter-spacing:0.5px;text-transform:uppercase;}
+.field input,.field select{width:100%;background:rgba(13,27,42,0.8);border:1px solid var(–border);
+border-radius:8px;color:#e8f4ff;padding:10px 14px;font-family:‘Rajdhani’,sans-serif;font-size:1rem;
+font-weight:500;transition:border-color 0.2s;outline:none;appearance:none;}
+.field input:focus,.field select:focus{border-color:var(–frost);box-shadow:0 0 0 3px rgba(91,184,212,0.15);}
+.field select option{background:var(–deep);}
+.radio-group{display:flex;gap:8px;flex-wrap:wrap;}
+.radio-btn{flex:1;min-width:80px;background:rgba(13,27,42,0.8);border:2px solid var(–border);
+border-radius:8px;padding:10px 8px;text-align:center;cursor:pointer;font-weight:700;
+font-size:0.95rem;transition:all 0.2s;color:#6a9cb8;}
+.radio-btn.sel-14{border-color:var(–gold);color:var(–gold);background:rgba(240,192,64,0.1);}
+.radio-btn.sel-19{border-color:var(–purple);color:var(–purple);background:rgba(155,109,255,0.1);}
+.radio-btn.sel-none{border-color:var(–red);color:var(–red);background:rgba(224,85,85,0.1);}
+.submit-btn{width:100%;background:linear-gradient(135deg,#1a4a7a,#2a6aaa);border:2px solid var(–frost);
+border-radius:10px;color:#fff;font-family:‘Orbitron’,monospace;font-size:0.85rem;font-weight:700;
+letter-spacing:2px;padding:14px;cursor:pointer;transition:all 0.2s;text-transform:uppercase;}
+.submit-btn:hover{background:linear-gradient(135deg,#2a5a8a,#3a7aba);box-shadow:0 0 20px rgba(91,184,212,0.3);}
+.success-msg{display:none;background:rgba(61,214,140,0.1);border:1px solid var(–green);border-radius:8px;
+padding:12px 16px;color:var(–green);font-weight:600;text-align:center;margin-top:12px;font-size:0.95rem;}
+
+/* ROSTER */
+.roster-controls{display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap;}
+.filter-btn{background:var(–panel);border:1px solid var(–border);border-radius:20px;color:#6a9cb8;
+padding:6px 14px;font-family:‘Rajdhani’,sans-serif;font-size:0.85rem;font-weight:600;cursor:pointer;transition:all 0.2s;}
+.filter-btn.active{background:var(–frost);color:var(–deep);border-color:var(–frost);}
+.stats-bar{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:16px;}
+.stat-box{background:var(–panel);border:1px solid var(–border);border-radius:10px;padding:10px 8px;text-align:center;}
+.stat-box .num{font-family:‘Orbitron’,monospace;font-size:1.4rem;font-weight:700;}
+.stat-box .lbl{font-size:0.7rem;color:#6a9cb8;text-transform:uppercase;letter-spacing:0.5px;}
+.stat-box.total .num{color:var(–ice);}
+.stat-box.l14 .num{color:var(–gold);}
+.stat-box.l19 .num{color:var(–purple);}
+.stat-box.abs .num{color:var(–red);}
+
+.player-row{background:var(–panel);border:1px solid var(–border);border-left:3px solid var(–border);
+border-radius:10px;padding:12px 14px;margin-bottom:8px;display:flex;align-items:center;gap:12px;}
+.player-row.attended{border-left-color:var(–green);}
+.player-row.absent{border-left-color:#333;}
+.name-col{flex:1;min-width:0;}
+.player-name{font-weight:700;font-size:1rem;color:#e8f4ff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.player-id{font-size:0.75rem;color:#6a9cb8;}
+.badge{font-family:‘Orbitron’,monospace;font-size:0.6rem;font-weight:700;padding:3px 8px;
+border-radius:4px;letter-spacing:1px;white-space:nowrap;}
+.badge.l14{background:rgba(240,192,64,0.15);color:var(–gold);border:1px solid rgba(240,192,64,0.3);}
+.badge.l19{background:rgba(155,109,255,0.15);color:var(–purple);border:1px solid rgba(155,109,255,0.3);}
+.badge.none{background:rgba(224,85,85,0.15);color:var(–red);border:1px solid rgba(224,85,85,0.3);}
+.tele-badge{font-size:0.8rem;color:var(–frost);font-weight:600;white-space:nowrap;}
+.score-input{width:72px;background:rgba(13,27,42,0.8);border:1px solid var(–border);border-radius:6px;
+color:var(–gold);padding:5px 8px;font-family:‘Rajdhani’,sans-serif;font-size:0.95rem;font-weight:700;
+text-align:center;outline:none;}
+.score-input:focus{border-color:var(–gold);}
+.attend-btn{width:36px;height:36px;border-radius:50%;border:2px solid var(–border);background:transparent;
+cursor:pointer;font-size:1.1rem;display:flex;align-items:center;justify-content:center;
+transition:all 0.15s;flex-shrink:0;}
+.attend-btn.on{background:rgba(61,214,140,0.15);border-color:var(–green);}
+.attend-btn.off{background:rgba(224,85,85,0.1);border-color:rgba(224,85,85,0.3);}
+.export-btn{width:100%;background:linear-gradient(135deg,#1a3a1a,#2a5a2a);border:2px solid var(–green);
+border-radius:10px;color:var(–green);font-family:‘Orbitron’,monospace;font-size:0.75rem;font-weight:700;
+letter-spacing:2px;padding:12px;cursor:pointer;margin-bottom:12px;text-transform:uppercase;transition:all 0.2s;}
+.export-btn:hover{box-shadow:0 0 16px rgba(61,214,140,0.3);}
+.clear-btn{width:100%;background:transparent;border:1px solid rgba(224,85,85,0.3);border-radius:8px;
+color:rgba(224,85,85,0.6);font-family:‘Rajdhani’,sans-serif;font-size:0.8rem;font-weight:600;
+letter-spacing:1px;padding:8px;cursor:pointer;margin-bottom:12px;text-transform:uppercase;}
+.empty-state{text-align:center;padding:48px 24px;color:#3a5a74;}
+.empty-state .icon{font-size:3rem;margin-bottom:12px;}
+.admin-lock{background:var(–panel);border:1px solid rgba(155,109,255,0.3);border-radius:10px;
+padding:16px;margin-bottom:10px;display:flex;gap:8px;align-items:center;}
+.admin-lock input{flex:1;background:rgba(13,27,42,0.8);border:1px solid var(–border);border-radius:8px;
+color:#e8f4ff;padding:8px 12px;font-family:‘Rajdhani’,sans-serif;font-size:0.95rem;outline:none;}
+.admin-lock button{background:var(–purple);border:none;border-radius:8px;color:#fff;
+font-family:‘Orbitron’,monospace;font-size:0.65rem;font-weight:700;padding:8px 14px;cursor:pointer;letter-spacing:1px;}
+.lock-msg{font-size:0.8rem;color:var(–purple);margin-bottom:14px;}
+.section-hdr{font-family:‘Orbitron’,monospace;font-size:0.65rem;color:#3a5a74;letter-spacing:2px;
+text-transform:uppercase;padding:10px 0 5px;border-bottom:1px solid var(–border);margin-bottom:6px;}
+
+/* TEAMS */
+.teams-pw-bar{background:var(–panel);border:1px solid rgba(155,109,255,0.3);border-radius:10px;
+padding:14px 16px;margin-bottom:14px;}
+.teams-pw-bar p{font-size:0.8rem;color:#6a9cb8;margin-bottom:8px;}
+.teams-pw-bar .row{display:flex;gap:8px;}
+.teams-pw-bar input{flex:1;background:rgba(13,27,42,0.8);border:1px solid var(–border);border-radius:8px;
+color:#e8f4ff;padding:8px 12px;font-family:‘Rajdhani’,sans-serif;font-size:0.95rem;outline:none;}
+.teams-pw-bar button{background:var(–purple);border:none;border-radius:8px;color:#fff;
+font-family:‘Orbitron’,monospace;font-size:0.65rem;font-weight:700;padding:8px 14px;cursor:pointer;letter-spacing:1px;}
+.teams-lock-msg{font-size:0.8rem;color:var(–purple);margin-top:8px;}
+
+.unassigned-box{background:var(–panel);border:1px solid rgba(224,85,85,0.25);border-radius:10px;
+padding:12px 14px;margin-bottom:14px;}
+.unassigned-box h3{font-family:‘Orbitron’,monospace;font-size:0.68rem;color:#e05555;letter-spacing:2px;margin-bottom:8px;}
+.uchip{display:inline-flex;align-items:center;gap:4px;background:rgba(13,27,42,0.6);
+border:1px solid var(–border);border-radius:14px;padding:3px 10px;margin:3px;font-size:0.8rem;color:#8ab4cc;}
+
+.map-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px;}
+
+.gcard{border-radius:12px;overflow:hidden;border:2px solid var(–border);background:var(–panel);}
+.gcard.g1{border-color:rgba(74,158,255,0.45);}
+.gcard.g2{border-color:rgba(224,85,85,0.45);}
+.gcard.g3{border-color:rgba(61,214,140,0.45);}
+.gcard.g4{border-color:rgba(240,192,64,0.45);}
+
+.ghead{padding:9px 12px;display:flex;align-items:center;gap:7px;border-bottom:1px solid rgba(255,255,255,0.06);}
+.gcard.g1 .ghead{background:rgba(74,158,255,0.1);}
+.gcard.g2 .ghead{background:rgba(224,85,85,0.1);}
+.gcard.g3 .ghead{background:rgba(61,214,140,0.1);}
+.gcard.g4 .ghead{background:rgba(240,192,64,0.1);}
+
+.glabel{font-family:‘Orbitron’,monospace;font-size:1.1rem;font-weight:900;line-height:1;}
+.gcard.g1 .glabel{color:var(–g1);}
+.gcard.g2 .glabel{color:var(–g2);}
+.gcard.g3 .glabel{color:var(–g3);}
+.gcard.g4 .glabel{color:var(–g4);}
+.gname{font-size:0.65rem;color:#6a9cb8;letter-spacing:0.5px;}
+.gcount{font-size:0.65rem;color:#6a9cb8;font-family:‘Orbitron’,monospace;margin-left:auto;}
+
+.gbody{padding:10px 12px;}
+.small-lbl{font-size:0.62rem;color:#6a9cb8;text-transform:uppercase;letter-spacing:1px;margin-bottom:4px;}
+
+.lead-box{display:flex;align-items:center;gap:6px;background:rgba(0,0,0,0.2);border-radius:6px;
+padding:6px 9px;min-height:32px;margin-bottom:8px;}
+.lead-box .ln{font-weight:700;font-size:0.88rem;color:#e8f4ff;flex:1;}
+.lead-box .le{font-size:0.78rem;color:#3a5a74;font-style:italic;}
+
+.gselect{width:100%;background:rgba(13,27,42,0.9);border:1px solid var(–border);border-radius:6px;
+color:#e8f4ff;padding:5px 9px;font-family:‘Rajdhani’,sans-serif;font-size:0.88rem;outline:none;
+appearance:none;margin-bottom:8px;}
+.gselect:focus{border-color:var(–frost);}
+.gselect option{background:var(–deep);}
+
+.zone-wrap{margin-bottom:8px;}
+.ztag{display:inline-block;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);
+border-radius:4px;padding:2px 6px;font-size:0.64rem;color:#7a9db8;margin:1px 1px 1px 0;}
+
+.mchip{display:flex;align-items:center;gap:5px;background:rgba(0,0,0,0.15);border-radius:5px;
+padding:4px 8px;margin-bottom:3px;}
+.mchip .mn{font-size:0.83rem;font-weight:600;color:#cce8f4;flex:1;}
+.mchip .mt{font-size:0.68rem;color:#6a9cb8;}
+.mchip .mr{background:transparent;border:none;color:rgba(224,85,85,0.45);cursor:pointer;font-size:0.8rem;padding:0 2px;}
+.mchip .mr:hover{color:var(–red);}
+.no-mem{font-size:0.78rem;color:#3a5a74;font-style:italic;padding:3px 0;}
+
+.add-row{display:flex;gap:5px;margin-top:5px;}
+.add-row select{flex:1;background:rgba(13,27,42,0.8);border:1px solid var(–border);border-radius:5px;
+color:#e8f4ff;padding:5px 7px;font-family:‘Rajdhani’,sans-serif;font-size:0.82rem;outline:none;appearance:none;}
+.add-row select option{background:var(–deep);}
+.add-row button{background:rgba(61,214,140,0.12);border:1px solid rgba(61,214,140,0.3);border-radius:5px;
+color:var(–green);font-family:‘Orbitron’,monospace;font-size:0.55rem;font-weight:700;
+padding:5px 8px;cursor:pointer;letter-spacing:1px;white-space:nowrap;}
+.add-row button:hover{background:rgba(61,214,140,0.22);}
+
+.save-teams-btn{width:100%;background:linear-gradient(135deg,#2a1a4a,#4a2a8a);border:2px solid var(–purple);
+border-radius:10px;color:var(–purple);font-family:‘Orbitron’,monospace;font-size:0.75rem;font-weight:700;
+letter-spacing:2px;padding:12px;cursor:pointer;margin-top:4px;text-transform:uppercase;transition:all 0.2s;display:none;}
+.save-teams-btn:hover{box-shadow:0 0 16px rgba(155,109,255,0.3);}
+
+/* COPY BUTTONS */
+.copy-section{margin-top:16px;padding-top:14px;border-top:1px solid var(–border);}
+.copy-section-title{font-family:‘Orbitron’,monospace;font-size:0.65rem;color:#6a9cb8;
+letter-spacing:2px;text-transform:uppercase;margin-bottom:10px;}
+.copy-all-btn{width:100%;background:linear-gradient(135deg,#1a3a4a,#1a5a6a);border:2px solid var(–frost);
+border-radius:10px;color:var(–frost);font-family:‘Orbitron’,monospace;font-size:0.72rem;font-weight:700;
+letter-spacing:2px;padding:12px;cursor:pointer;margin-bottom:10px;text-transform:uppercase;transition:all 0.2s;}
+.copy-all-btn:hover{box-shadow:0 0 16px rgba(91,184,212,0.3);}
+.copy-cards-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
+.copy-card{border-radius:10px;overflow:hidden;border:1px solid var(–border);}
+.copy-card.g1{border-color:rgba(74,158,255,0.4);}
+.copy-card.g2{border-color:rgba(224,85,85,0.4);}
+.copy-card.g3{border-color:rgba(61,214,140,0.4);}
+.copy-card.g4{border-color:rgba(240,192,64,0.4);}
+.copy-preview{background:rgba(0,0,0,0.3);padding:10px 12px;font-family:monospace;font-size:0.72rem;
+color:#8ab4cc;line-height:1.5;white-space:pre-wrap;min-height:60px;max-height:130px;overflow-y:auto;}
+.copy-btn{width:100%;border:none;padding:9px;cursor:pointer;font-family:‘Orbitron’,monospace;
+font-size:0.6rem;font-weight:700;letter-spacing:1px;transition:all 0.2s;}
+.copy-card.g1 .copy-btn{background:rgba(74,158,255,0.15);color:var(–g1);}
+.copy-card.g2 .copy-btn{background:rgba(224,85,85,0.15);color:var(–g2);}
+.copy-card.g3 .copy-btn{background:rgba(61,214,140,0.15);color:var(–g3);}
+.copy-card.g4 .copy-btn{background:rgba(240,192,64,0.15);color:var(–g4);}
+.copy-btn:active{opacity:0.7;}
+.copy-btn.copied{background:rgba(61,214,140,0.25)!important;color:var(–green)!important;}
+</style>
+
+</head>
+<body>
+
+<header>
+  <h1>⚔️ FOUNDRY LEGION TRACKER</h1>
+  <p>Sign-Up · Teams · Attendance</p>
+</header>
+
+<div class="tabs">
+  <div class="tab active" onclick="showTab('signup',this)">📋 Sign Up</div>
+  <div class="tab" onclick="showTab('roster',this)">🗒️ Roster</div>
+  <div class="tab" onclick="showTab('teams',this)">🗺️ Teams</div>
+  <div class="tab" onclick="showTab('match',this)">🏆 Match</div>
+</div>
+
+<!-- SIGN UP -->
+
+<div class="page active" id="page-signup">
+  <div class="form-card" style="margin-top:16px;">
+    <h2>🧊 Player Registration</h2>
+    <div class="field">
+      <label>In-Game Username</label>
+      <input type="text" id="f-name" placeholder="e.g. Mama Mac" autocomplete="off">
+    </div>
+    <div class="field">
+      <label>Player / Chief ID</label>
+      <input type="text" id="f-id" placeholder="e.g. 123456789" autocomplete="off" inputmode="numeric">
+    </div>
+    <div class="field">
+      <label>Which Foundry Legion can you do?</label>
+      <div class="radio-group">
+        <div class="radio-btn" id="btn-14" onclick="selectLegion('14')">Legion 14</div>
+        <div class="radio-btn" id="btn-19" onclick="selectLegion('19')">Legion 19</div>
+        <div class="radio-btn" id="btn-none" onclick="selectLegion('none')">Abstain</div>
+      </div>
+    </div>
+    <div class="field">
+      <label>Teleports available?</label>
+      <select id="f-tele">
+        <option value="">— Select —</option>
+        <option>0</option><option>1</option><option>2</option><option>3</option>
+        <option>4</option><option>5</option><option>6–10</option><option>11–20</option><option>20+</option>
+      </select>
+    </div>
+    <button class="submit-btn" onclick="submitSignup()">✦ SUBMIT SIGN-UP ✦</button>
+    <div class="success-msg" id="success-msg"></div>
+  </div>
+</div>
+
+<!-- ROSTER -->
+
+<div class="page" id="page-roster">
+  <div style="margin-top:16px;">
+    <div class="stats-bar">
+      <div class="stat-box total"><div class="num" id="stat-total">0</div><div class="lbl">Total</div></div>
+      <div class="stat-box l14"><div class="num" id="stat-14">0</div><div class="lbl">L14</div></div>
+      <div class="stat-box l19"><div class="num" id="stat-19">0</div><div class="lbl">L19</div></div>
+      <div class="stat-box abs"><div class="num" id="stat-abs">0</div><div class="lbl">Abstain</div></div>
+    </div>
+    <div class="roster-controls">
+      <button class="filter-btn active" onclick="setFilter('all',this)">All</button>
+      <button class="filter-btn" onclick="setFilter('14',this)">Legion 14</button>
+      <button class="filter-btn" onclick="setFilter('19',this)">Legion 19</button>
+      <button class="filter-btn" onclick="setFilter('none',this)">Abstain</button>
+    </div>
+    <div id="roster-list"></div>
+    <div class="empty-state" id="roster-empty"><div class="icon">❄️</div><p>No sign-ups yet.</p></div>
+    <button class="export-btn" onclick="exportCSV()">⬇ Export to CSV</button>
+    <button class="clear-btn" onclick="clearAll()">🗑 Clear All Data (Admin)</button>
+  </div>
+</div>
+
+<!-- TEAMS -->
+
+<div class="page" id="page-teams">
+  <div style="margin-top:16px;">
+    <div class="teams-pw-bar">
+      <p>Admin access required to assign team leads &amp; members.</p>
+      <div class="row">
+        <input type="password" id="teams-pw" placeholder="Admin password">
+        <button onclick="unlockTeams()">UNLOCK</button>
+      </div>
+      <div class="teams-lock-msg" id="teams-lock-msg">🔒 View only — unlock to edit assignments</div>
+    </div>
+    <div class="unassigned-box" id="ubox" style="display:none;">
+      <h3>⚠️ UNASSIGNED (<span id="ucnt">0</span>)</h3>
+      <div id="ulist"></div>
+    </div>
+    <div class="map-grid" id="map-grid"></div>
+    <button class="save-teams-btn" id="save-teams-btn" onclick="flashSaved()">💾 SAVE TEAM ASSIGNMENTS</button>
+
+```
+<!-- COPY FOR WHITEOUT -->
+<div class="copy-section" id="copy-section" style="display:none;">
+  <div class="copy-section-title">📋 Copy Team Messages for Whiteout Chat</div>
+  <button class="copy-all-btn" onclick="copyAll()">📋 COPY ALL 4 TEAMS AT ONCE</button>
+  <div class="copy-cards-grid" id="copy-cards-grid"></div>
+</div>
+```
+
+  </div>
+</div>
+
+<!-- MATCH -->
+
+<div class="page" id="page-match">
+  <div style="margin-top:16px;">
+    <div class="admin-lock">
+      <input type="password" id="admin-pw" placeholder="Admin password to edit scores">
+      <button onclick="unlockAdmin()">UNLOCK</button>
+    </div>
+    <div class="lock-msg" id="lock-status">🔒 Scores locked — unlock to mark attendance &amp; enter scores</div>
+    <div id="match-list"></div>
+    <div class="empty-state" id="match-empty"><div class="icon">⚔️</div><p>Players who sign up will appear here.</p></div>
+  </div>
+</div>
+
+<script>
+const PASS = "fc10";
+let adminUnlocked = false, teamsUnlocked = false;
+let curFilter = 'all', selLegion = '';
+
+const GROUPS = [
+  {id:'g1',label:'G1',cls:'g1',name:'West Zone',
+   zones:['Team 1 Safe Zone','Arsenal Supplies','Repair Facility I','Repair Facility II','Prototype Site I','Munitions Warehouse']},
+  {id:'g2',label:'G2',cls:'g2',name:'South Zone',
+   zones:['Central Transit Station','Arsenal Supplies','Munitions Warehouse']},
+  {id:'g3',label:'G3',cls:'g3',name:'East Zone',
+   zones:['Team 2 Safe Zone','Arsenal Supplies','Repair Facility III','Prototype Site II']},
+  {id:'g4',label:'G4',cls:'g4',name:'North Zone',
+   zones:['Boiler Room','Mercenary Camp','Repair Facility IV','Arsenal Supplies']}
+];
+
+// Storage
+const getP = () => { try{return JSON.parse(localStorage.getItem('wos_p')||'[]');}catch{return[];} };
+const saveP = a => localStorage.setItem('wos_p', JSON.stringify(a));
+const getT = () => {
+  try{
+    const raw = JSON.parse(localStorage.getItem('wos_t')||'{}');
+    GROUPS.forEach(g=>{ if(!raw[g.id]) raw[g.id]={lead:'',members:[]}; });
+    return raw;
+  }catch{
+    const t={};GROUPS.forEach(g=>t[g.id]={lead:'',members:[]});return t;
+  }
+};
+const saveT = o => localStorage.setItem('wos_t', JSON.stringify(o));
+const esc = s => String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+
+// Tabs
+function showTab(tab, el) {
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+  document.getElementById('page-'+tab).classList.add('active');
+  el.classList.add('active');
+  if(tab==='roster') renderRoster();
+  if(tab==='teams') renderTeams();
+  if(tab==='match') renderMatch();
+}
+
+// Legion picker
+function selectLegion(v) {
+  selLegion = v;
+  ['14','19','none'].forEach(x => {
+    document.getElementById('btn-'+x).className = 'radio-btn' + (x===v?' sel-'+v:'');
+  });
+}
+
+// Sign-up
+function submitSignup() {
+  const name = document.getElementById('f-name').value.trim();
+  const pid  = document.getElementById('f-id').value.trim();
+  const tele = document.getElementById('f-tele').value;
+  if(!name){alert('Enter your username.');return;}
+  if(!pid){alert('Enter your Player ID.');return;}
+  if(!selLegion){alert('Select a Foundry Legion option.');return;}
+  if(!tele){alert('Select your teleport count.');return;}
+  const players = getP();
+  const idx = players.findIndex(p=>p.pid===pid);
+  if(idx>=0){
+    players[idx]={...players[idx],name,legion:selLegion,teleports:tele};
+    saveP(players); flashMsg('✅ Sign-up updated!');
+  } else {
+    players.push({name,pid,legion:selLegion,teleports:tele,attended:false,score:''});
+    saveP(players); flashMsg('✅ Sign-up recorded! See you on the battlefield.');
+  }
+  document.getElementById('f-name').value='';
+  document.getElementById('f-id').value='';
+  document.getElementById('f-tele').value='';
+  selLegion='';
+  ['14','19','none'].forEach(x=>document.getElementById('btn-'+x).className='radio-btn');
+}
+function flashMsg(m){
+  const el=document.getElementById('success-msg');
+  el.textContent=m;el.style.display='block';
+  setTimeout(()=>el.style.display='none',3500);
+}
+
+// Roster
+function setFilter(f,btn){
+  curFilter=f;
+  document.querySelectorAll('.filter-btn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  renderRoster();
+}
+function renderRoster(){
+  const players=getP();
+  const fil=curFilter==='all'?players:players.filter(p=>p.legion===curFilter);
+  document.getElementById('stat-total').textContent=players.length;
+  document.getElementById('stat-14').textContent=players.filter(p=>p.legion==='14').length;
+  document.getElementById('stat-19').textContent=players.filter(p=>p.legion==='19').length;
+  document.getElementById('stat-abs').textContent=players.filter(p=>p.legion==='none').length;
+  const list=document.getElementById('roster-list');
+  const empty=document.getElementById('roster-empty');
+  if(!fil.length){list.innerHTML='';empty.style.display='block';return;}
+  empty.style.display='none';
+  list.innerHTML=fil.map(p=>{
+    const lbl=p.legion==='14'?'Legion 14':p.legion==='19'?'Legion 19':'Abstain';
+    const cls=p.legion==='14'?'l14':p.legion==='19'?'l19':'none';
+    return `<div class="player-row">
+      <div class="name-col"><div class="player-name">${esc(p.name)}</div><div class="player-id">ID: ${esc(p.pid)}</div></div>
+      <span class="badge ${cls}">${lbl}</span>
+      <span class="tele-badge">🌀 ${esc(p.teleports)}</span>
+    </div>`;
+  }).join('');
+}
+
+// Teams
+function unlockTeams(){
+  if(document.getElementById('teams-pw').value===PASS){
+    teamsUnlocked=true;
+    const msg=document.getElementById('teams-lock-msg');
+    msg.textContent='🔓 Unlocked — assign leads and members';
+    msg.style.color='#3dd68c';
+    document.getElementById('save-teams-btn').style.display='block';
+    renderTeams();
+    renderCopyCards();
+  } else {
+    const msg=document.getElementById('teams-lock-msg');
+    msg.textContent='❌ Incorrect password';
+    msg.style.color='#e05555';
+  }
+}
+
+function renderTeams(){
+  const players=getP();
+  if(teamsUnlocked) setTimeout(renderCopyCards,50);
+  const teams=getT();
+  const assigned=new Set();
+  GROUPS.forEach(g=>{
+    const t=teams[g.id];
+    if(t.lead) assigned.add(t.lead);
+    (t.members||[]).forEach(pid=>assigned.add(pid));
+  });
+  const unassigned=players.filter(p=>!assigned.has(p.pid));
+  const ubox=document.getElementById('ubox');
+  if(players.length){
+    ubox.style.display='block';
+    document.getElementById('ucnt').textContent=unassigned.length;
+    document.getElementById('ulist').innerHTML=unassigned.length
+      ?unassigned.map(p=>`<span class="uchip">👤 ${esc(p.name)}</span>`).join('')
+      :'<span style="font-size:0.85rem;color:#3dd68c;">✅ All players assigned!</span>';
+  }
+
+  document.getElementById('map-grid').innerHTML=GROUPS.map(g=>{
+    const t=teams[g.id];
+    const leadP=players.find(p=>p.pid===t.lead);
+    const mems=(t.members||[]).map(pid=>players.find(p=>p.pid===pid)).filter(Boolean);
+    const total=(leadP?1:0)+mems.length;
+
+    // options for lead dropdown (exclude current members)
+    const leadOpts=players.filter(p=>!(t.members||[]).includes(p.pid));
+    // options to add as member (exclude lead and existing members)
+    const addOpts=players.filter(p=>p.pid!==t.lead&&!(t.members||[]).includes(p.pid));
+
+    const leadSection = teamsUnlocked
+      ? `<div class="small-lbl">⭐ Team Lead</div>
+         <select class="gselect" onchange="setLead('${g.id}',this.value)">
+           <option value="">— No lead —</option>
+           ${leadOpts.map(p=>`<option value="${esc(p.pid)}"${p.pid===t.lead?' selected':''}>${esc(p.name)}</option>`).join('')}
+         </select>`
+      : `<div class="small-lbl">⭐ Team Lead</div>
+         <div class="lead-box">${leadP?`<span>⭐</span><span class="ln">${esc(leadP.name)}</span>`:'<span class="le">No lead assigned</span>'}</div>`;
+
+    const memsSection = teamsUnlocked
+      ? `<div class="small-lbl" style="margin-top:6px;">👥 Members (${mems.length})</div>
+         ${mems.map(m=>`<div class="mchip">
+           <span class="mn">${esc(m.name)}</span>
+           <span class="mt">🌀${esc(m.teleports)}</span>
+           <button class="mr" onclick="removeMem('${g.id}','${m.pid}')">✕</button>
+         </div>`).join('')}
+         ${!mems.length?'<div class="no-mem">No members yet</div>':''}
+         <div class="add-row">
+           <select id="add-${g.id}">
+             <option value="">— Add player —</option>
+             ${addOpts.map(p=>`<option value="${esc(p.pid)}">${esc(p.name)}</option>`).join('')}
+           </select>
+           <button onclick="addMem('${g.id}')">+ ADD</button>
+         </div>`
+      : `<div class="small-lbl" style="margin-top:6px;">👥 Members (${mems.length})</div>
+         ${mems.map(m=>`<div class="mchip">
+           <span class="mn">${esc(m.name)}</span>
+           <span class="mt">🌀${esc(m.teleports)}</span>
+         </div>`).join('')}
+         ${!mems.length?'<div class="no-mem">No members yet</div>':''}`;
+
+    return `<div class="gcard ${g.cls}">
+      <div class="ghead">
+        <span class="glabel">${g.label}</span>
+        <div><div class="gname">${g.name}</div></div>
+        <span class="gcount">${total}p</span>
+      </div>
+      <div class="gbody">
+        ${leadSection}
+        <div class="zone-wrap">
+          <div class="small-lbl">📍 Zones</div>
+          ${g.zones.map(z=>`<span class="ztag">${z}</span>`).join('')}
+        </div>
+        ${memsSection}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function setLead(gid,pid){
+  const teams=getT();
+  teams[gid].members=(teams[gid].members||[]).filter(p=>p!==pid);
+  teams[gid].lead=pid;
+  saveT(teams); renderTeams();
+}
+function addMem(gid){
+  const sel=document.getElementById('add-'+gid);
+  const pid=sel.value; if(!pid) return;
+  const teams=getT();
+  if(!teams[gid].members) teams[gid].members=[];
+  if(!teams[gid].members.includes(pid)) teams[gid].members.push(pid);
+  saveT(teams); renderTeams();
+}
+function removeMem(gid,pid){
+  const teams=getT();
+  teams[gid].members=(teams[gid].members||[]).filter(p=>p!==pid);
+  saveT(teams); renderTeams();
+}
+function flashSaved(){
+  const btn=document.getElementById('save-teams-btn');
+  btn.textContent='✅ SAVED!';btn.style.color='#3dd68c';btn.style.borderColor='#3dd68c';
+  setTimeout(()=>{btn.textContent='💾 SAVE TEAM ASSIGNMENTS';btn.style.color='';btn.style.borderColor='';},2000);
+  renderCopyCards();
+}
+
+// ===== COPY FOR WHITEOUT =====
+function buildTeamMsg(g){
+  const players=getP(), teams=getT(), t=teams[g.id];
+  const leadP=players.find(p=>p.pid===t.lead);
+  const mems=(t.members||[]).map(pid=>players.find(p=>p.pid===pid)).filter(Boolean);
+  const emojis={g1:'🔵',g2:'🔴',g3:'🟢',g4:'🟡'};
+  let msg = emojis[g.id]+' '+g.label+' — '+g.name+'\n';
+  msg += '━━━━━━━━━━━━━━━\n';
+  msg += '📍 Zones: '+g.zones.join(', ')+'\n';
+  msg += '━━━━━━━━━━━━━━━\n';
+  if(leadP){
+    msg += '⭐ Lead: '+leadP.name+' [🌀'+leadP.teleports+']\n';
+  } else {
+    msg += '⭐ Lead: TBD\n';
+  }
+  if(mems.length){
+    msg += '👥 Team:\n';
+    mems.forEach(m=>{ msg += '  • '+m.name+' [🌀'+m.teleports+']\n'; });
+  } else {
+    msg += '👥 Team: (none assigned)\n';
+  }
+  msg += '━━━━━━━━━━━━━━━';
+  return msg;
+}
+
+function renderCopyCards(){
+  const section=document.getElementById('copy-section');
+  const grid=document.getElementById('copy-cards-grid');
+  section.style.display='block';
+  grid.innerHTML=GROUPS.map(g=>{
+    const msg=buildTeamMsg(g);
+    const emojis={g1:'🔵',g2:'🔴',g3:'🟢',g4:'🟡'};
+    return `<div class="copy-card ${g.cls}">
+      <div class="copy-preview" id="prev-${g.id}">${esc(msg)}</div>
+      <button class="copy-btn" id="cbtn-${g.id}" onclick="copyTeam('${g.id}')">${emojis[g.id]} COPY ${g.label}</button>
+    </div>`;
+  }).join('');
+}
+
+function copyTeam(gid){
+  const g=GROUPS.find(x=>x.id===gid);
+  const msg=buildTeamMsg(g);
+  navigator.clipboard.writeText(msg).then(()=>{
+    const btn=document.getElementById('cbtn-'+gid);
+    const orig=btn.textContent;
+    btn.textContent='✅ COPIED!';
+    btn.classList.add('copied');
+    setTimeout(()=>{btn.textContent=orig;btn.classList.remove('copied');},2000);
+  }).catch(()=>{
+    // fallback for older browsers
+    const ta=document.createElement('textarea');
+    ta.value=msg;ta.style.position='fixed';ta.style.opacity='0';
+    document.body.appendChild(ta);ta.select();document.execCommand('copy');
+    document.body.removeChild(ta);
+    const btn=document.getElementById('cbtn-'+gid);
+    const orig=btn.textContent;
+    btn.textContent='✅ COPIED!';btn.classList.add('copied');
+    setTimeout(()=>{btn.textContent=orig;btn.classList.remove('copied');},2000);
+  });
+}
+
+function copyAll(){
+  const allMsg=GROUPS.map(g=>buildTeamMsg(g)).join('\n\n');
+  navigator.clipboard.writeText(allMsg).then(()=>{
+    const btn=document.querySelector('.copy-all-btn');
+    const orig=btn.textContent;
+    btn.textContent='✅ ALL TEAMS COPIED!';
+    btn.style.color='#3dd68c';btn.style.borderColor='#3dd68c';
+    setTimeout(()=>{btn.textContent=orig;btn.style.color='';btn.style.borderColor='';},2500);
+  }).catch(()=>{
+    const ta=document.createElement('textarea');
+    ta.value=allMsg;ta.style.position='fixed';ta.style.opacity='0';
+    document.body.appendChild(ta);ta.select();document.execCommand('copy');
+    document.body.removeChild(ta);
+    const btn=document.querySelector('.copy-all-btn');
+    const orig=btn.textContent;
+    btn.textContent='✅ ALL TEAMS COPIED!';
+    btn.style.color='#3dd68c';btn.style.borderColor='#3dd68c';
+    setTimeout(()=>{btn.textContent=orig;btn.style.color='';btn.style.borderColor='';},2500);
+  });
+}
+
+// Match
+function unlockAdmin(){
+  if(document.getElementById('admin-pw').value===PASS){
+    adminUnlocked=true;
+    const el=document.getElementById('lock-status');
+    el.textContent='🔓 Unlocked — mark attendance and enter scores';
+    el.style.color='#3dd68c';
+    renderMatch();
+  } else {
+    const el=document.getElementById('lock-status');
+    el.textContent='❌ Incorrect password';
+    el.style.color='#e05555';
+  }
+}
+
+function renderMatch(){
+  const players=getP();
+  const teams=getT();
+  const list=document.getElementById('match-list');
+  const empty=document.getElementById('match-empty');
+  if(!players.length){list.innerHTML='';empty.style.display='block';return;}
+  empty.style.display='none';
+
+  const getGrp=pid=>{
+    for(const g of GROUPS){
+      const t=teams[g.id];
+      if(t.lead===pid||(t.members||[]).includes(pid)) return g;
+    }
+    return null;
+  };
+  const ORDER={g1:0,g2:1,g3:2,g4:3};
+  const sorted=[...players].sort((a,b)=>{
+    const ga=getGrp(a.pid),gb=getGrp(b.pid);
+    return ((ga?ORDER[ga.id]:99)-(gb?ORDER[gb.id]:99))||a.name.localeCompare(b.name);
+  });
+
+  const dis=adminUnlocked?'':'disabled';
+  let lastG=null;
+  list.innerHTML=sorted.map(p=>{
+    const idx=players.findIndex(x=>x.pid===p.pid);
+    const grp=getGrp(p.pid);
+    const gk=grp?grp.id:'unassigned';
+    let hdr='';
+    if(gk!==lastG){
+      lastG=gk;
+      const lbl=grp?`${grp.label} — ${grp.name}`:'Unassigned';
+      const col=grp?`var(--${grp.cls})`:'#6a9cb8';
+      hdr=`<div class="section-hdr" style="color:${col};">${lbl}</div>`;
+    }
+    const isLead=grp&&teams[grp.id].lead===p.pid;
+    const bc=p.legion==='14'?'l14':p.legion==='19'?'l19':'none';
+    const bl=p.legion==='14'?'L14':p.legion==='19'?'L19':'ABS';
+    const ac=p.attended?'on':'off';
+    const ae=p.attended?'✅':'○';
+    const rc=p.attended?'attended':'absent';
+    return `${hdr}<div class="player-row ${rc}">
+      <button class="attend-btn ${ac}" onclick="togAttend(${idx})" ${dis}>${ae}</button>
+      <div class="name-col">
+        <div class="player-name">${isLead?'⭐ ':''}${esc(p.name)}</div>
+        <div class="player-id">ID: ${esc(p.pid)} · 🌀 ${esc(p.teleports)}</div>
+      </div>
+      <span class="badge ${bc}">${bl}</span>
+      <input class="score-input" type="text" placeholder="Score" value="${esc(p.score||'')}"
+        onchange="saveScore(${idx},this.value)" ${dis}>
+    </div>`;
+  }).join('');
+}
+
+function togAttend(idx){
+  if(!adminUnlocked) return;
+  const p=getP(); p[idx].attended=!p[idx].attended; saveP(p); renderMatch();
+}
+function saveScore(idx,val){
+  if(!adminUnlocked) return;
+  const p=getP(); p[idx].score=val; saveP(p);
+}
+
+function exportCSV(){
+  const players=getP(),teams=getT();
+  if(!players.length){alert('No data.');return;}
+  const getG=pid=>{for(const g of GROUPS){const t=teams[g.id];if(t.lead===pid||(t.members||[]).includes(pid))return g;}return null;};
+  const hdr='Username,Player ID,Legion,Teleports,Group,Team Lead,Attended,Score\n';
+  const rows=players.map(p=>{
+    const g=getG(p.pid);
+    const isLead=g&&teams[g.id].lead===p.pid?'Yes':'No';
+    return `"${p.name}","${p.pid}","${p.legion==='14'?'Legion 14':p.legion==='19'?'Legion 19':'Abstain'}","${p.teleports}","${g?g.label:''}","${isLead}","${p.attended?'Yes':'No'}","${p.score||''}"`;
+  }).join('\n');
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(new Blob([hdr+rows],{type:'text/csv'}));
+  a.download='foundry_roster.csv';a.click();
+}
+
+function clearAll(){
+  if(!confirm('⚠️ Clear ALL data? Cannot be undone.')) return;
+  if(prompt('Admin password:')!==PASS){alert('Incorrect.');return;}
+  localStorage.removeItem('wos_p');
+  localStorage.removeItem('wos_t');
+  renderRoster();renderTeams();renderMatch();
+}
+
+renderRoster();
+</script>
+
+</body>
+</html>
