@@ -1,756 +1,1223 @@
 <!DOCTYPE html>
-
 <html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>⚔️ Foundry Legion Tracker</title>
+<title>JAV Alliance Tracker</title>
 <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
-  :root {
-    --ice:#a8d8ea;--frost:#5bb8d4;--deep:#0d1b2a;--navy:#1a2f4a;--panel:#162338;
-    --gold:#f0c040;--green:#3dd68c;--red:#e05555;--purple:#9b6dff;
-    --border:rgba(91,184,212,0.25);
-    --g1:#4a9eff;--g2:#e05555;--g3:#3dd68c;--g4:#f0c040;
-  }
-  *{box-sizing:border-box;margin:0;padding:0;}
-  body{background:var(--deep);color:#cce8f4;font-family:'Rajdhani',sans-serif;font-size:16px;min-height:100vh;
-    background-image:radial-gradient(ellipse at 20% 0%,rgba(91,184,212,0.08) 0%,transparent 60%),
-    radial-gradient(ellipse at 80% 100%,rgba(155,109,255,0.06) 0%,transparent 60%);}
-  header{background:linear-gradient(135deg,#0d1b2a,#1a2f4a);border-bottom:2px solid var(--frost);
-    padding:18px 20px 14px;text-align:center;position:sticky;top:0;z-index:100;box-shadow:0 4px 24px rgba(0,0,0,0.5);}
-  header h1{font-family:'Orbitron',monospace;font-size:1.3rem;font-weight:900;color:var(--gold);
-    letter-spacing:2px;text-shadow:0 0 20px rgba(240,192,64,0.4);}
-  header p{font-size:0.8rem;color:var(--frost);margin-top:3px;letter-spacing:1px;text-transform:uppercase;}
-  .tabs{display:flex;border-bottom:2px solid var(--border);background:var(--navy);
-    position:sticky;top:72px;z-index:99;overflow-x:auto;}
-  .tab{flex:1;min-width:55px;padding:11px 5px;text-align:center;cursor:pointer;
-    font-family:'Orbitron',monospace;font-size:0.55rem;letter-spacing:0.8px;color:#6a9cb8;
-    border-bottom:3px solid transparent;transition:all 0.2s;text-transform:uppercase;white-space:nowrap;}
-  .tab.active{color:var(--gold);border-bottom-color:var(--gold);background:rgba(240,192,64,0.05);}
-  .tab:hover:not(.active){color:var(--ice);background:rgba(255,255,255,0.03);}
-  .page{display:none;padding:16px;max-width:700px;margin:0 auto;}
-  .page.active{display:block;}
+:root{
+  --ice:#a8d8ea;--frost:#5bb8d4;--deep:#0d1b2a;--navy:#1a2f4a;--panel:#162338;
+  --gold:#f0c040;--green:#3dd68c;--red:#e05555;--purple:#9b6dff;--amber:#e8963a;
+  --border:rgba(91,184,212,0.25);
+  --g1:#4a9eff;--g2:#e05555;--g3:#3dd68c;--g4:#f0c040;
+  --r1:#ff69b4;--r2:#3dd68c;--r3:#f0a040;--r4:#e05555;--r5:#9b6dff;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{background:var(--deep);color:#cce8f4;font-family:'Rajdhani',sans-serif;font-size:16px;min-height:100vh;}
 
-/* FORM */
-.form-card{background:var(–panel);border:1px solid var(–border);border-radius:12px;padding:20px;margin-bottom:16px;}
-.form-card h2{font-family:‘Orbitron’,monospace;font-size:0.85rem;color:var(–frost);letter-spacing:2px;
-margin-bottom:16px;text-transform:uppercase;display:flex;align-items:center;gap:8px;}
-.field{margin-bottom:14px;}
-.field label{display:block;font-size:0.8rem;color:var(–ice);margin-bottom:5px;font-weight:600;
-letter-spacing:0.5px;text-transform:uppercase;}
-.field input,.field select{width:100%;background:rgba(13,27,42,0.8);border:1px solid var(–border);
-border-radius:8px;color:#e8f4ff;padding:10px 14px;font-family:‘Rajdhani’,sans-serif;font-size:1rem;
-font-weight:500;transition:border-color 0.2s;outline:none;appearance:none;}
-.field input:focus,.field select:focus{border-color:var(–frost);box-shadow:0 0 0 3px rgba(91,184,212,0.15);}
-.field select option{background:var(–deep);}
-.radio-group{display:flex;gap:8px;flex-wrap:wrap;}
-.radio-btn{flex:1;min-width:80px;background:rgba(13,27,42,0.8);border:2px solid var(–border);
-border-radius:8px;padding:10px 8px;text-align:center;cursor:pointer;font-weight:700;
-font-size:0.95rem;transition:all 0.2s;color:#6a9cb8;}
-.radio-btn.sel-14{border-color:var(–gold);color:var(–gold);background:rgba(240,192,64,0.1);}
-.radio-btn.sel-19{border-color:var(–purple);color:var(–purple);background:rgba(155,109,255,0.1);}
-.radio-btn.sel-none{border-color:var(–red);color:var(–red);background:rgba(224,85,85,0.1);}
-.submit-btn{width:100%;background:linear-gradient(135deg,#1a4a7a,#2a6aaa);border:2px solid var(–frost);
-border-radius:10px;color:#fff;font-family:‘Orbitron’,monospace;font-size:0.85rem;font-weight:700;
-letter-spacing:2px;padding:14px;cursor:pointer;transition:all 0.2s;text-transform:uppercase;}
-.submit-btn:hover{background:linear-gradient(135deg,#2a5a8a,#3a7aba);box-shadow:0 0 20px rgba(91,184,212,0.3);}
-.success-msg{display:none;background:rgba(61,214,140,0.1);border:1px solid var(–green);border-radius:8px;
-padding:12px 16px;color:var(–green);font-weight:600;text-align:center;margin-top:12px;font-size:0.95rem;}
+/* LOADING */
+#loading-screen{position:fixed;inset:0;background:var(--deep);display:flex;flex-direction:column;
+  align-items:center;justify-content:center;z-index:999;gap:16px;}
+#loading-screen h2{font-family:'Orbitron',monospace;color:var(--gold);font-size:1.2rem;letter-spacing:2px;}
+.spinner{width:40px;height:40px;border:3px solid var(--border);border-top-color:var(--frost);
+  border-radius:50%;animation:spin 0.8s linear infinite;}
+@keyframes spin{to{transform:rotate(360deg);}}
 
-/* ROSTER */
-.roster-controls{display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap;}
-.filter-btn{background:var(–panel);border:1px solid var(–border);border-radius:20px;color:#6a9cb8;
-padding:6px 14px;font-family:‘Rajdhani’,sans-serif;font-size:0.85rem;font-weight:600;cursor:pointer;transition:all 0.2s;}
-.filter-btn.active{background:var(–frost);color:var(–deep);border-color:var(–frost);}
-.stats-bar{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:16px;}
-.stat-box{background:var(–panel);border:1px solid var(–border);border-radius:10px;padding:10px 8px;text-align:center;}
-.stat-box .num{font-family:‘Orbitron’,monospace;font-size:1.4rem;font-weight:700;}
-.stat-box .lbl{font-size:0.7rem;color:#6a9cb8;text-transform:uppercase;letter-spacing:0.5px;}
-.stat-box.total .num{color:var(–ice);}
-.stat-box.l14 .num{color:var(–gold);}
-.stat-box.l19 .num{color:var(–purple);}
-.stat-box.abs .num{color:var(–red);}
+/* LOGIN */
+#login-screen{display:none;position:fixed;inset:0;background:var(--deep);z-index:998;
+  align-items:center;justify-content:center;padding:24px;}
+.login-card{background:var(--panel);border:2px solid var(--frost);border-radius:16px;
+  padding:28px 22px;width:100%;max-width:360px;text-align:center;}
+.login-card .logo{font-family:'Orbitron',monospace;font-size:1.4rem;font-weight:900;
+  color:var(--gold);letter-spacing:3px;text-shadow:0 0 20px rgba(240,192,64,0.4);margin-bottom:4px;}
+.login-card .sub{font-size:0.78rem;color:var(--frost);letter-spacing:2px;text-transform:uppercase;margin-bottom:22px;}
+.lfield{margin-bottom:12px;text-align:left;}
+.lfield label{display:block;font-size:0.72rem;color:var(--ice);margin-bottom:4px;text-transform:uppercase;letter-spacing:1px;font-weight:600;}
+.lfield input{width:100%;background:rgba(13,27,42,0.8);border:1px solid var(--border);border-radius:8px;
+  color:#e8f4ff;padding:10px 13px;font-family:'Rajdhani',sans-serif;font-size:1rem;outline:none;}
+.lfield input:focus{border-color:var(--frost);}
+.lbtn{width:100%;background:linear-gradient(135deg,#1a4a7a,#2a6aaa);border:2px solid var(--frost);
+  border-radius:10px;color:#fff;font-family:'Orbitron',monospace;font-size:0.78rem;font-weight:700;
+  letter-spacing:2px;padding:12px;cursor:pointer;margin-top:4px;}
+.lerr{color:var(--red);font-size:0.82rem;margin-top:8px;display:none;}
+.ltoggle{font-size:0.78rem;color:#6a9cb8;margin-top:14px;cursor:pointer;}
+.ltoggle span{color:var(--frost);text-decoration:underline;}
 
-.player-row{background:var(–panel);border:1px solid var(–border);border-left:3px solid var(–border);
-border-radius:10px;padding:12px 14px;margin-bottom:8px;display:flex;align-items:center;gap:12px;}
-.player-row.attended{border-left-color:var(–green);}
-.player-row.absent{border-left-color:#333;}
-.name-col{flex:1;min-width:0;}
-.player-name{font-weight:700;font-size:1rem;color:#e8f4ff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
-.player-id{font-size:0.75rem;color:#6a9cb8;}
-.badge{font-family:‘Orbitron’,monospace;font-size:0.6rem;font-weight:700;padding:3px 8px;
-border-radius:4px;letter-spacing:1px;white-space:nowrap;}
-.badge.l14{background:rgba(240,192,64,0.15);color:var(–gold);border:1px solid rgba(240,192,64,0.3);}
-.badge.l19{background:rgba(155,109,255,0.15);color:var(–purple);border:1px solid rgba(155,109,255,0.3);}
-.badge.none{background:rgba(224,85,85,0.15);color:var(–red);border:1px solid rgba(224,85,85,0.3);}
-.tele-badge{font-size:0.8rem;color:var(–frost);font-weight:600;white-space:nowrap;}
-.score-input{width:72px;background:rgba(13,27,42,0.8);border:1px solid var(–border);border-radius:6px;
-color:var(–gold);padding:5px 8px;font-family:‘Rajdhani’,sans-serif;font-size:0.95rem;font-weight:700;
-text-align:center;outline:none;}
-.score-input:focus{border-color:var(–gold);}
-.attend-btn{width:36px;height:36px;border-radius:50%;border:2px solid var(–border);background:transparent;
-cursor:pointer;font-size:1.1rem;display:flex;align-items:center;justify-content:center;
-transition:all 0.15s;flex-shrink:0;}
-.attend-btn.on{background:rgba(61,214,140,0.15);border-color:var(–green);}
-.attend-btn.off{background:rgba(224,85,85,0.1);border-color:rgba(224,85,85,0.3);}
-.export-btn{width:100%;background:linear-gradient(135deg,#1a3a1a,#2a5a2a);border:2px solid var(–green);
-border-radius:10px;color:var(–green);font-family:‘Orbitron’,monospace;font-size:0.75rem;font-weight:700;
-letter-spacing:2px;padding:12px;cursor:pointer;margin-bottom:12px;text-transform:uppercase;transition:all 0.2s;}
-.export-btn:hover{box-shadow:0 0 16px rgba(61,214,140,0.3);}
-.clear-btn{width:100%;background:transparent;border:1px solid rgba(224,85,85,0.3);border-radius:8px;
-color:rgba(224,85,85,0.6);font-family:‘Rajdhani’,sans-serif;font-size:0.8rem;font-weight:600;
-letter-spacing:1px;padding:8px;cursor:pointer;margin-bottom:12px;text-transform:uppercase;}
-.empty-state{text-align:center;padding:48px 24px;color:#3a5a74;}
-.empty-state .icon{font-size:3rem;margin-bottom:12px;}
-.admin-lock{background:var(–panel);border:1px solid rgba(155,109,255,0.3);border-radius:10px;
-padding:16px;margin-bottom:10px;display:flex;gap:8px;align-items:center;}
-.admin-lock input{flex:1;background:rgba(13,27,42,0.8);border:1px solid var(–border);border-radius:8px;
-color:#e8f4ff;padding:8px 12px;font-family:‘Rajdhani’,sans-serif;font-size:0.95rem;outline:none;}
-.admin-lock button{background:var(–purple);border:none;border-radius:8px;color:#fff;
-font-family:‘Orbitron’,monospace;font-size:0.65rem;font-weight:700;padding:8px 14px;cursor:pointer;letter-spacing:1px;}
-.lock-msg{font-size:0.8rem;color:var(–purple);margin-bottom:14px;}
-.section-hdr{font-family:‘Orbitron’,monospace;font-size:0.65rem;color:#3a5a74;letter-spacing:2px;
-text-transform:uppercase;padding:10px 0 5px;border-bottom:1px solid var(–border);margin-bottom:6px;}
+/* APP SHELL */
+#app{display:none;}
+.app-header{background:linear-gradient(135deg,#0d1b2a,#1a2f4a);border-bottom:2px solid var(--frost);
+  padding:12px 16px;display:flex;align-items:center;justify-content:space-between;
+  position:sticky;top:0;z-index:100;box-shadow:0 4px 24px rgba(0,0,0,0.5);}
+.app-header .logo{font-family:'Orbitron',monospace;font-size:1rem;font-weight:900;color:var(--gold);letter-spacing:2px;}
+.app-header .sub{font-size:0.65rem;color:var(--frost);letter-spacing:1px;}
+.hright{display:flex;align-items:center;gap:8px;}
+.uchip{background:rgba(91,184,212,0.1);border:1px solid var(--border);border-radius:18px;
+  padding:4px 10px;font-size:0.72rem;color:var(--ice);}
+.lout{background:transparent;border:1px solid rgba(224,85,85,0.3);border-radius:6px;
+  color:rgba(224,85,85,0.7);font-size:0.68rem;padding:4px 8px;cursor:pointer;font-family:'Rajdhani',sans-serif;}
 
-/* TEAMS */
-.teams-pw-bar{background:var(–panel);border:1px solid rgba(155,109,255,0.3);border-radius:10px;
-padding:14px 16px;margin-bottom:14px;}
-.teams-pw-bar p{font-size:0.8rem;color:#6a9cb8;margin-bottom:8px;}
-.teams-pw-bar .row{display:flex;gap:8px;}
-.teams-pw-bar input{flex:1;background:rgba(13,27,42,0.8);border:1px solid var(–border);border-radius:8px;
-color:#e8f4ff;padding:8px 12px;font-family:‘Rajdhani’,sans-serif;font-size:0.95rem;outline:none;}
-.teams-pw-bar button{background:var(–purple);border:none;border-radius:8px;color:#fff;
-font-family:‘Orbitron’,monospace;font-size:0.65rem;font-weight:700;padding:8px 14px;cursor:pointer;letter-spacing:1px;}
-.teams-lock-msg{font-size:0.8rem;color:var(–purple);margin-top:8px;}
+/* HOME SCREEN */
+#page-home{padding:20px 16px;max-width:500px;margin:0 auto;}
+.home-welcome{text-align:center;padding:16px 0 24px;}
+.home-welcome h2{font-family:'Orbitron',monospace;font-size:1rem;color:var(--gold);letter-spacing:2px;margin-bottom:6px;}
+.home-welcome p{font-size:0.85rem;color:#6a9cb8;}
+.event-cards{display:flex;flex-direction:column;gap:12px;}
+.event-card{border-radius:14px;overflow:hidden;cursor:pointer;transition:transform 0.15s;border:2px solid var(--border);}
+.event-card:active{transform:scale(0.98);}
+.event-card.foundry{border-color:rgba(91,184,212,0.5);background:linear-gradient(135deg,rgba(26,47,74,0.9),rgba(22,35,56,0.9));}
+.event-card.beartrap{border-color:rgba(224,85,85,0.5);background:linear-gradient(135deg,rgba(42,22,22,0.9),rgba(56,22,22,0.9));}
+.event-card.canyon{border-color:rgba(155,109,255,0.5);background:linear-gradient(135deg,rgba(30,22,50,0.9),rgba(40,22,70,0.9));}
+.ec-inner{padding:18px 20px;display:flex;align-items:center;gap:16px;}
+.ec-icon{font-size:2.4rem;flex-shrink:0;}
+.ec-text h3{font-family:'Orbitron',monospace;font-size:0.85rem;font-weight:700;letter-spacing:1px;margin-bottom:4px;}
+.ec-text p{font-size:0.78rem;color:#8ab4cc;}
+.event-card.foundry .ec-text h3{color:var(--frost);}
+.event-card.beartrap .ec-text h3{color:#ff8080;}
+.event-card.canyon .ec-text h3{color:#b89dff;}
+.ec-arrow{margin-left:auto;font-size:1.2rem;color:#6a9cb8;}
 
-.unassigned-box{background:var(–panel);border:1px solid rgba(224,85,85,0.25);border-radius:10px;
-padding:12px 14px;margin-bottom:14px;}
-.unassigned-box h3{font-family:‘Orbitron’,monospace;font-size:0.68rem;color:#e05555;letter-spacing:2px;margin-bottom:8px;}
-.uchip{display:inline-flex;align-items:center;gap:4px;background:rgba(13,27,42,0.6);
-border:1px solid var(–border);border-radius:14px;padding:3px 10px;margin:3px;font-size:0.8rem;color:#8ab4cc;}
+/* INNER EVENT PAGES */
+.event-page{display:none;flex-direction:column;height:100vh;}
+.event-page.active{display:flex;}
+.event-header{padding:10px 16px;display:flex;align-items:center;gap:10px;border-bottom:1px solid var(--border);
+  background:var(--navy);position:sticky;top:57px;z-index:99;}
+.back-btn{background:transparent;border:1px solid var(--border);border-radius:6px;color:var(--frost);
+  font-size:0.75rem;padding:5px 10px;cursor:pointer;font-family:'Orbitron',monospace;letter-spacing:1px;}
+.event-header h2{font-family:'Orbitron',monospace;font-size:0.85rem;color:var(--gold);letter-spacing:2px;}
+.event-tabs{display:flex;border-bottom:2px solid var(--border);background:var(--navy);overflow-x:auto;}
+.etab{flex:1;min-width:50px;padding:10px 4px;text-align:center;cursor:pointer;
+  font-family:'Orbitron',monospace;font-size:0.5rem;letter-spacing:0.5px;color:#6a9cb8;
+  border-bottom:3px solid transparent;transition:all 0.2s;text-transform:uppercase;white-space:nowrap;}
+.etab.active{color:var(--gold);border-bottom-color:var(--gold);background:rgba(240,192,64,0.05);}
+.etab.admin-tab{display:none;}
+.etab.admin-tab.show{display:block;}
+.epages{flex:1;overflow-y:auto;}
+.epage{display:none;padding:14px;max-width:700px;margin:0 auto;}
+.epage.active{display:block;}
 
-.map-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px;}
+/* SHARED COMPONENTS */
+.card{background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:16px;margin-bottom:12px;}
+.card h3{font-family:'Orbitron',monospace;font-size:0.78rem;color:var(--frost);letter-spacing:2px;
+  margin-bottom:12px;text-transform:uppercase;}
+.field{margin-bottom:12px;}
+.field label{display:block;font-size:0.72rem;color:var(--ice);margin-bottom:4px;font-weight:600;
+  letter-spacing:0.5px;text-transform:uppercase;}
+.field input,.field select{width:100%;background:rgba(13,27,42,0.8);border:1px solid var(--border);
+  border-radius:8px;color:#e8f4ff;padding:9px 12px;font-family:'Rajdhani',sans-serif;font-size:0.95rem;
+  font-weight:500;outline:none;appearance:none;}
+.field input:focus,.field select:focus{border-color:var(--frost);}
+.field select option{background:var(--deep);}
+.radio-group{display:flex;gap:7px;flex-wrap:wrap;}
+.rbtn{flex:1;min-width:70px;background:rgba(13,27,42,0.8);border:2px solid var(--border);
+  border-radius:8px;padding:9px 6px;text-align:center;cursor:pointer;font-weight:700;
+  font-size:0.88rem;transition:all 0.2s;color:#6a9cb8;}
+.rbtn.sel{border-color:var(--frost);color:var(--frost);background:rgba(91,184,212,0.1);}
+.btn{width:100%;border-radius:10px;font-family:'Orbitron',monospace;font-size:0.72rem;font-weight:700;
+  letter-spacing:2px;padding:12px;cursor:pointer;transition:all 0.2s;text-transform:uppercase;border:2px solid;}
+.btn-blue{background:linear-gradient(135deg,#1a4a7a,#2a6aaa);border-color:var(--frost);color:#fff;}
+.btn-green{background:linear-gradient(135deg,#1a3a1a,#2a5a2a);border-color:var(--green);color:var(--green);}
+.btn-purple{background:linear-gradient(135deg,#2a1a4a,#4a2a8a);border-color:var(--purple);color:var(--purple);}
+.btn-amber{background:linear-gradient(135deg,#3a2a0a,#5a4a1a);border-color:var(--amber);color:var(--amber);}
+.btn-red{background:transparent;border-color:rgba(224,85,85,0.4);color:rgba(224,85,85,0.7);}
+.btn+.btn{margin-top:8px;}
+.flash{display:none;border-radius:8px;padding:10px 14px;font-weight:600;text-align:center;margin-top:10px;font-size:0.88rem;}
+.flash.ok{background:rgba(61,214,140,0.1);border:1px solid var(--green);color:var(--green);}
+.flash.err{background:rgba(224,85,85,0.1);border:1px solid var(--red);color:var(--red);}
+.empty{text-align:center;padding:36px 20px;color:#3a5a74;}
+.empty .icon{font-size:2.2rem;margin-bottom:8px;}
 
-.gcard{border-radius:12px;overflow:hidden;border:2px solid var(–border);background:var(–panel);}
+/* STATS */
+.stats-bar{display:grid;gap:7px;margin-bottom:12px;}
+.stats-bar.cols2{grid-template-columns:repeat(2,1fr);}
+.stats-bar.cols3{grid-template-columns:repeat(3,1fr);}
+.stats-bar.cols4{grid-template-columns:repeat(4,1fr);}
+.sbox{background:var(--panel);border:1px solid var(--border);border-radius:9px;padding:9px 6px;text-align:center;}
+.sbox .n{font-family:'Orbitron',monospace;font-size:1.2rem;font-weight:700;}
+.sbox .l{font-size:0.62rem;color:#6a9cb8;text-transform:uppercase;letter-spacing:0.5px;}
+
+/* PLAYER ROWS */
+.prow{background:var(--panel);border:1px solid var(--border);border-left:3px solid var(--border);
+  border-radius:9px;padding:10px 12px;margin-bottom:6px;display:flex;align-items:center;gap:9px;}
+.prow.yes{border-left-color:var(--green);}
+.prow.no{border-left-color:#333;}
+.pname{font-weight:700;font-size:0.92rem;color:#e8f4ff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.pid{font-size:0.7rem;color:#6a9cb8;}
+.ncol{flex:1;min-width:0;}
+.badge{font-family:'Orbitron',monospace;font-size:0.56rem;font-weight:700;padding:3px 7px;
+  border-radius:4px;letter-spacing:1px;white-space:nowrap;}
+.badge.l14{background:rgba(240,192,64,0.15);color:var(--gold);border:1px solid rgba(240,192,64,0.3);}
+.badge.l19{background:rgba(155,109,255,0.15);color:var(--purple);border:1px solid rgba(155,109,255,0.3);}
+.badge.abs{background:rgba(224,85,85,0.15);color:var(--red);border:1px solid rgba(224,85,85,0.3);}
+.abtn{width:32px;height:32px;border-radius:50%;border:2px solid var(--border);background:transparent;
+  cursor:pointer;font-size:0.95rem;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.abtn.on{background:rgba(61,214,140,0.15);border-color:var(--green);}
+.abtn.off{background:rgba(224,85,85,0.1);border-color:rgba(224,85,85,0.3);}
+.sinput{width:80px;background:rgba(13,27,42,0.8);border:1px solid var(--border);border-radius:6px;
+  color:var(--gold);padding:4px 6px;font-family:'Rajdhani',sans-serif;font-size:0.85rem;font-weight:700;
+  text-align:center;outline:none;}
+.sinput:focus{border-color:var(--gold);}
+.filter-bar{display:flex;gap:6px;margin-bottom:10px;flex-wrap:wrap;}
+.fbtn{background:var(--panel);border:1px solid var(--border);border-radius:16px;color:#6a9cb8;
+  padding:5px 12px;font-family:'Rajdhani',sans-serif;font-size:0.8rem;font-weight:600;cursor:pointer;}
+.fbtn.active{background:var(--frost);color:var(--deep);border-color:var(--frost);}
+.shdr{font-family:'Orbitron',monospace;font-size:0.6rem;color:#3a5a74;letter-spacing:2px;
+  text-transform:uppercase;padding:8px 0 4px;border-bottom:1px solid var(--border);margin-bottom:5px;}
+
+/* FOUNDRY TEAMS */
+.map-grid{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-bottom:12px;}
+.gcard{border-radius:11px;overflow:hidden;border:2px solid var(--border);background:var(--panel);}
 .gcard.g1{border-color:rgba(74,158,255,0.45);}
 .gcard.g2{border-color:rgba(224,85,85,0.45);}
 .gcard.g3{border-color:rgba(61,214,140,0.45);}
 .gcard.g4{border-color:rgba(240,192,64,0.45);}
-
-.ghead{padding:9px 12px;display:flex;align-items:center;gap:7px;border-bottom:1px solid rgba(255,255,255,0.06);}
+.ghead{padding:8px 11px;display:flex;align-items:center;gap:6px;border-bottom:1px solid rgba(255,255,255,0.06);}
 .gcard.g1 .ghead{background:rgba(74,158,255,0.1);}
 .gcard.g2 .ghead{background:rgba(224,85,85,0.1);}
 .gcard.g3 .ghead{background:rgba(61,214,140,0.1);}
 .gcard.g4 .ghead{background:rgba(240,192,64,0.1);}
+.glabel{font-family:'Orbitron',monospace;font-size:1rem;font-weight:900;}
+.gcard.g1 .glabel{color:var(--g1);}
+.gcard.g2 .glabel{color:var(--g2);}
+.gcard.g3 .glabel{color:var(--g3);}
+.gcard.g4 .glabel{color:var(--g4);}
+.gname{font-size:0.6rem;color:#6a9cb8;}
+.gcnt{font-size:0.6rem;color:#6a9cb8;font-family:'Orbitron',monospace;margin-left:auto;}
+.gbody{padding:9px 10px;}
+.slbl{font-size:0.58rem;color:#6a9cb8;text-transform:uppercase;letter-spacing:1px;margin-bottom:3px;}
+.gsel{width:100%;background:rgba(13,27,42,0.9);border:1px solid var(--border);border-radius:5px;
+  color:#e8f4ff;padding:5px 7px;font-family:'Rajdhani',sans-serif;font-size:0.82rem;outline:none;appearance:none;margin-bottom:6px;}
+.ztag{display:inline-block;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.07);
+  border-radius:3px;padding:1px 5px;font-size:0.58rem;color:#7a9db8;margin:1px 1px 1px 0;}
+.mchip{display:flex;align-items:center;gap:4px;background:rgba(0,0,0,0.15);border-radius:5px;padding:3px 7px;margin-bottom:3px;}
+.mchip .mn{font-size:0.78rem;font-weight:600;color:#cce8f4;flex:1;}
+.mchip .mt{font-size:0.62rem;color:#6a9cb8;}
+.mchip .mr{background:transparent;border:none;color:rgba(224,85,85,0.4);cursor:pointer;font-size:0.75rem;padding:0 2px;}
+.nomem{font-size:0.72rem;color:#3a5a74;font-style:italic;padding:2px 0;}
+.addrow{display:flex;gap:4px;margin-top:4px;}
+.addrow select{flex:1;background:rgba(13,27,42,0.8);border:1px solid var(--border);border-radius:5px;
+  color:#e8f4ff;padding:4px 6px;font-family:'Rajdhani',sans-serif;font-size:0.78rem;outline:none;appearance:none;}
+.addrow select option{background:var(--deep);}
+.addrow button{background:rgba(61,214,140,0.12);border:1px solid rgba(61,214,140,0.3);border-radius:5px;
+  color:var(--green);font-family:'Orbitron',monospace;font-size:0.5rem;font-weight:700;padding:4px 7px;cursor:pointer;white-space:nowrap;}
 
-.glabel{font-family:‘Orbitron’,monospace;font-size:1.1rem;font-weight:900;line-height:1;}
-.gcard.g1 .glabel{color:var(–g1);}
-.gcard.g2 .glabel{color:var(–g2);}
-.gcard.g3 .glabel{color:var(–g3);}
-.gcard.g4 .glabel{color:var(–g4);}
-.gname{font-size:0.65rem;color:#6a9cb8;letter-spacing:0.5px;}
-.gcount{font-size:0.65rem;color:#6a9cb8;font-family:‘Orbitron’,monospace;margin-left:auto;}
+/* CANYON ROUTES */
+.route-grid{display:flex;flex-direction:column;gap:9px;margin-bottom:12px;}
+.rcard{border-radius:11px;overflow:hidden;border:2px solid var(--border);background:var(--panel);}
+.rcard.r1{border-color:rgba(255,105,180,0.5);}
+.rcard.r2{border-color:rgba(61,214,140,0.5);}
+.rcard.r3{border-color:rgba(240,160,64,0.5);}
+.rcard.r4{border-color:rgba(224,85,85,0.5);}
+.rcard.r5{border-color:rgba(155,109,255,0.5);}
+.rhead{padding:8px 12px;display:flex;align-items:center;gap:8px;border-bottom:1px solid rgba(255,255,255,0.06);}
+.rcard.r1 .rhead{background:rgba(255,105,180,0.1);}
+.rcard.r2 .rhead{background:rgba(61,214,140,0.1);}
+.rcard.r3 .rhead{background:rgba(240,160,64,0.1);}
+.rcard.r4 .rhead{background:rgba(224,85,85,0.1);}
+.rcard.r5 .rhead{background:rgba(155,109,255,0.1);}
+.rlabel{font-family:'Orbitron',monospace;font-size:0.85rem;font-weight:900;}
+.rcard.r1 .rlabel{color:var(--r1);}
+.rcard.r2 .rlabel{color:var(--r2);}
+.rcard.r3 .rlabel{color:var(--r3);}
+.rcard.r4 .rlabel{color:var(--r4);}
+.rcard.r5 .rlabel{color:var(--r5);}
+.rcnt{font-size:0.6rem;color:#6a9cb8;font-family:'Orbitron',monospace;margin-left:auto;}
+.rbody{padding:9px 11px;display:grid;grid-template-columns:1fr 1fr;gap:8px;}
+.rmems{grid-column:1/-1;}
 
-.gbody{padding:10px 12px;}
-.small-lbl{font-size:0.62rem;color:#6a9cb8;text-transform:uppercase;letter-spacing:1px;margin-bottom:4px;}
+/* COPY */
+.copy-section{margin-top:12px;padding-top:12px;border-top:1px solid var(--border);}
+.copy-title{font-family:'Orbitron',monospace;font-size:0.6rem;color:#6a9cb8;letter-spacing:2px;text-transform:uppercase;margin-bottom:8px;}
+.copy-all-btn{width:100%;background:linear-gradient(135deg,#1a3a4a,#1a5a6a);border:2px solid var(--frost);
+  border-radius:9px;color:var(--frost);font-family:'Orbitron',monospace;font-size:0.68rem;font-weight:700;
+  letter-spacing:2px;padding:10px;cursor:pointer;margin-bottom:8px;text-transform:uppercase;}
+.copy-grid{display:grid;grid-template-columns:1fr 1fr;gap:7px;}
+.ccard{border-radius:8px;overflow:hidden;border:1px solid var(--border);}
+.ccard.g1{border-color:rgba(74,158,255,0.4);}
+.ccard.g2{border-color:rgba(224,85,85,0.4);}
+.ccard.g3{border-color:rgba(61,214,140,0.4);}
+.ccard.g4{border-color:rgba(240,192,64,0.4);}
+.ccard.r1{border-color:rgba(255,105,180,0.4);}
+.ccard.r2{border-color:rgba(61,214,140,0.4);}
+.ccard.r3{border-color:rgba(240,160,64,0.4);}
+.ccard.r4{border-color:rgba(224,85,85,0.4);}
+.ccard.r5{border-color:rgba(155,109,255,0.4);}
+.cprev{background:rgba(0,0,0,0.3);padding:8px 9px;font-family:monospace;font-size:0.65rem;
+  color:#8ab4cc;line-height:1.5;white-space:pre-wrap;min-height:50px;max-height:110px;overflow-y:auto;}
+.cbtn{width:100%;border:none;padding:7px;cursor:pointer;font-family:'Orbitron',monospace;
+  font-size:0.52rem;font-weight:700;letter-spacing:1px;transition:all 0.2s;}
+.ccard.g1 .cbtn{background:rgba(74,158,255,0.15);color:var(--g1);}
+.ccard.g2 .cbtn{background:rgba(224,85,85,0.15);color:var(--g2);}
+.ccard.g3 .cbtn{background:rgba(61,214,140,0.15);color:var(--g3);}
+.ccard.g4 .cbtn{background:rgba(240,192,64,0.15);color:var(--g4);}
+.ccard.r1 .cbtn{background:rgba(255,105,180,0.15);color:var(--r1);}
+.ccard.r2 .cbtn{background:rgba(61,214,140,0.15);color:var(--r2);}
+.ccard.r3 .cbtn{background:rgba(240,160,64,0.15);color:var(--r3);}
+.ccard.r4 .cbtn{background:rgba(224,85,85,0.15);color:var(--r4);}
+.ccard.r5 .cbtn{background:rgba(155,109,255,0.15);color:var(--r5);}
+.cbtn.copied{background:rgba(61,214,140,0.25)!important;color:var(--green)!important;}
 
-.lead-box{display:flex;align-items:center;gap:6px;background:rgba(0,0,0,0.2);border-radius:6px;
-padding:6px 9px;min-height:32px;margin-bottom:8px;}
-.lead-box .ln{font-weight:700;font-size:0.88rem;color:#e8f4ff;flex:1;}
-.lead-box .le{font-size:0.78rem;color:#3a5a74;font-style:italic;}
+/* BEAR TRAP SPECIFIC */
+.trap-tabs{display:flex;gap:6px;margin-bottom:12px;}
+.ttab{flex:1;background:var(--panel);border:2px solid var(--border);border-radius:8px;padding:8px;
+  text-align:center;cursor:pointer;font-family:'Orbitron',monospace;font-size:0.6rem;font-weight:700;
+  color:#6a9cb8;letter-spacing:1px;transition:all 0.2s;}
+.ttab.active{background:rgba(224,85,85,0.1);border-color:var(--red);color:#ff8080;}
 
-.gselect{width:100%;background:rgba(13,27,42,0.9);border:1px solid var(–border);border-radius:6px;
-color:#e8f4ff;padding:5px 9px;font-family:‘Rajdhani’,sans-serif;font-size:0.88rem;outline:none;
-appearance:none;margin-bottom:8px;}
-.gselect:focus{border-color:var(–frost);}
-.gselect option{background:var(–deep);}
+/* ARCHIVE */
+.aev{background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:12px;margin-bottom:9px;}
+.aev-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;}
+.aev-title{font-family:'Orbitron',monospace;font-size:0.72rem;color:var(--gold);}
+.aev-date{font-size:0.68rem;color:#6a9cb8;}
+.aev-stats{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:6px;}
+.aev-stat{font-size:0.75rem;color:#8ab4cc;}
+.aev-stat span{color:var(--ice);font-weight:700;}
 
-.zone-wrap{margin-bottom:8px;}
-.ztag{display:inline-block;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);
-border-radius:4px;padding:2px 6px;font-size:0.64rem;color:#7a9db8;margin:1px 1px 1px 0;}
+/* UBOX */
+.ubox{background:var(--panel);border:1px solid rgba(224,85,85,0.25);border-radius:9px;padding:10px 12px;margin-bottom:11px;}
+.ubox h4{font-family:'Orbitron',monospace;font-size:0.62rem;color:#e05555;letter-spacing:2px;margin-bottom:6px;}
+.uchip{display:inline-flex;align-items:center;gap:3px;background:rgba(13,27,42,0.6);
+  border:1px solid var(--border);border-radius:12px;padding:2px 8px;margin:2px;font-size:0.75rem;color:#8ab4cc;}
 
-.mchip{display:flex;align-items:center;gap:5px;background:rgba(0,0,0,0.15);border-radius:5px;
-padding:4px 8px;margin-bottom:3px;}
-.mchip .mn{font-size:0.83rem;font-weight:600;color:#cce8f4;flex:1;}
-.mchip .mt{font-size:0.68rem;color:#6a9cb8;}
-.mchip .mr{background:transparent;border:none;color:rgba(224,85,85,0.45);cursor:pointer;font-size:0.8rem;padding:0 2px;}
-.mchip .mr:hover{color:var(–red);}
-.no-mem{font-size:0.78rem;color:#3a5a74;font-style:italic;padding:3px 0;}
-
-.add-row{display:flex;gap:5px;margin-top:5px;}
-.add-row select{flex:1;background:rgba(13,27,42,0.8);border:1px solid var(–border);border-radius:5px;
-color:#e8f4ff;padding:5px 7px;font-family:‘Rajdhani’,sans-serif;font-size:0.82rem;outline:none;appearance:none;}
-.add-row select option{background:var(–deep);}
-.add-row button{background:rgba(61,214,140,0.12);border:1px solid rgba(61,214,140,0.3);border-radius:5px;
-color:var(–green);font-family:‘Orbitron’,monospace;font-size:0.55rem;font-weight:700;
-padding:5px 8px;cursor:pointer;letter-spacing:1px;white-space:nowrap;}
-.add-row button:hover{background:rgba(61,214,140,0.22);}
-
-.save-teams-btn{width:100%;background:linear-gradient(135deg,#2a1a4a,#4a2a8a);border:2px solid var(–purple);
-border-radius:10px;color:var(–purple);font-family:‘Orbitron’,monospace;font-size:0.75rem;font-weight:700;
-letter-spacing:2px;padding:12px;cursor:pointer;margin-top:4px;text-transform:uppercase;transition:all 0.2s;display:none;}
-.save-teams-btn:hover{box-shadow:0 0 16px rgba(155,109,255,0.3);}
-
-/* COPY BUTTONS */
-.copy-section{margin-top:16px;padding-top:14px;border-top:1px solid var(–border);}
-.copy-section-title{font-family:‘Orbitron’,monospace;font-size:0.65rem;color:#6a9cb8;
-letter-spacing:2px;text-transform:uppercase;margin-bottom:10px;}
-.copy-all-btn{width:100%;background:linear-gradient(135deg,#1a3a4a,#1a5a6a);border:2px solid var(–frost);
-border-radius:10px;color:var(–frost);font-family:‘Orbitron’,monospace;font-size:0.72rem;font-weight:700;
-letter-spacing:2px;padding:12px;cursor:pointer;margin-bottom:10px;text-transform:uppercase;transition:all 0.2s;}
-.copy-all-btn:hover{box-shadow:0 0 16px rgba(91,184,212,0.3);}
-.copy-cards-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
-.copy-card{border-radius:10px;overflow:hidden;border:1px solid var(–border);}
-.copy-card.g1{border-color:rgba(74,158,255,0.4);}
-.copy-card.g2{border-color:rgba(224,85,85,0.4);}
-.copy-card.g3{border-color:rgba(61,214,140,0.4);}
-.copy-card.g4{border-color:rgba(240,192,64,0.4);}
-.copy-preview{background:rgba(0,0,0,0.3);padding:10px 12px;font-family:monospace;font-size:0.72rem;
-color:#8ab4cc;line-height:1.5;white-space:pre-wrap;min-height:60px;max-height:130px;overflow-y:auto;}
-.copy-btn{width:100%;border:none;padding:9px;cursor:pointer;font-family:‘Orbitron’,monospace;
-font-size:0.6rem;font-weight:700;letter-spacing:1px;transition:all 0.2s;}
-.copy-card.g1 .copy-btn{background:rgba(74,158,255,0.15);color:var(–g1);}
-.copy-card.g2 .copy-btn{background:rgba(224,85,85,0.15);color:var(–g2);}
-.copy-card.g3 .copy-btn{background:rgba(61,214,140,0.15);color:var(–g3);}
-.copy-card.g4 .copy-btn{background:rgba(240,192,64,0.15);color:var(–g4);}
-.copy-btn:active{opacity:0.7;}
-.copy-btn.copied{background:rgba(61,214,140,0.25)!important;color:var(–green)!important;}
+/* LEADERBOARD */
+.lbrow{background:var(--panel);border:1px solid var(--border);border-radius:9px;
+  padding:10px 12px;margin-bottom:6px;display:flex;align-items:center;gap:10px;}
+.lbrank{font-family:'Orbitron',monospace;font-size:1rem;font-weight:900;width:28px;text-align:center;flex-shrink:0;}
+.lbrank.r1{color:var(--gold);}
+.lbrank.r2{color:#c0c0c0;}
+.lbrank.r3{color:#cd7f32;}
+.lbrank.rn{color:#6a9cb8;}
+.lbdmg{font-size:0.78rem;color:var(--amber);font-weight:700;white-space:nowrap;}
 </style>
-
 </head>
 <body>
 
-<header>
-  <h1>⚔️ FOUNDRY LEGION TRACKER</h1>
-  <p>Sign-Up · Teams · Attendance</p>
-</header>
-
-<div class="tabs">
-  <div class="tab active" onclick="showTab('signup',this)">📋 Sign Up</div>
-  <div class="tab" onclick="showTab('roster',this)">🗒️ Roster</div>
-  <div class="tab" onclick="showTab('teams',this)">🗺️ Teams</div>
-  <div class="tab" onclick="showTab('match',this)">🏆 Match</div>
+<div id="loading-screen">
+  <h2>⚔️ JAV ALLIANCE</h2>
+  <div class="spinner"></div>
 </div>
 
-<!-- SIGN UP -->
+<div id="login-screen">
+  <div class="login-card">
+    <div class="logo">⚔️ JAV</div>
+    <div class="sub">Alliance Event Tracker</div>
+    <div id="lform">
+      <div class="lfield"><label>Email</label><input type="email" id="l-email" placeholder="your@email.com"></div>
+      <div class="lfield"><label>Password</label><input type="password" id="l-pass" placeholder="Password"></div>
+      <button class="lbtn" onclick="doLogin()">SIGN IN</button>
+      <div class="lerr" id="lerr"></div>
+      <div class="ltoggle">No account? <span onclick="toggleAuth(true)">Register</span></div>
+    </div>
+    <div id="sform" style="display:none;">
+      <div class="lfield"><label>In-Game Name</label><input type="text" id="s-name" placeholder="e.g. Mama Mac"></div>
+      <div class="lfield"><label>Email</label><input type="email" id="s-email" placeholder="your@email.com"></div>
+      <div class="lfield"><label>Password</label><input type="password" id="s-pass" placeholder="Min 6 characters"></div>
+      <button class="lbtn" onclick="doSignup()">CREATE ACCOUNT</button>
+      <div class="lerr" id="serr"></div>
+      <div class="ltoggle">Have account? <span onclick="toggleAuth(false)">Sign in</span></div>
+    </div>
+  </div>
+</div>
 
-<div class="page active" id="page-signup">
-  <div class="form-card" style="margin-top:16px;">
-    <h2>🧊 Player Registration</h2>
-    <div class="field">
-      <label>In-Game Username</label>
-      <input type="text" id="f-name" placeholder="e.g. Mama Mac" autocomplete="off">
+<div id="app">
+  <div class="app-header">
+    <div>
+      <div class="logo">⚔️ JAV</div>
+      <div class="sub">Alliance Event Tracker</div>
     </div>
-    <div class="field">
-      <label>Player / Chief ID</label>
-      <input type="text" id="f-id" placeholder="e.g. 123456789" autocomplete="off" inputmode="numeric">
+    <div class="hright">
+      <span class="uchip" id="uchip">...</span>
+      <button class="lout" onclick="doLogout()">OUT</button>
     </div>
-    <div class="field">
-      <label>Which Foundry Legion can you do?</label>
-      <div class="radio-group">
-        <div class="radio-btn" id="btn-14" onclick="selectLegion('14')">Legion 14</div>
-        <div class="radio-btn" id="btn-19" onclick="selectLegion('19')">Legion 19</div>
-        <div class="radio-btn" id="btn-none" onclick="selectLegion('none')">Abstain</div>
+  </div>
+
+  <!-- HOME -->
+  <div id="page-home" style="display:none;">
+    <div class="home-welcome">
+      <h2>SELECT EVENT</h2>
+      <p>Choose an event to sign up or manage</p>
+    </div>
+    <div class="event-cards">
+      <div class="event-card foundry" onclick="openEvent('foundry')">
+        <div class="ec-inner">
+          <div class="ec-icon">⚔️</div>
+          <div class="ec-text">
+            <h3>FOUNDRY LEGION</h3>
+            <p>Legion 14 & 19 UTC · G1–G4 Teams · Score Tracking</p>
+          </div>
+          <div class="ec-arrow">›</div>
+        </div>
+      </div>
+      <div class="event-card beartrap" onclick="openEvent('beartrap')">
+        <div class="ec-inner">
+          <div class="ec-icon">🐻</div>
+          <div class="ec-text">
+            <h3>BEAR TRAP</h3>
+            <p>Trap 1, 2 & 3 · Damage Point Leaderboards</p>
+          </div>
+          <div class="ec-arrow">›</div>
+        </div>
+      </div>
+      <div class="event-card canyon" onclick="openEvent('canyon')">
+        <div class="ec-inner">
+          <div class="ec-icon">🏔️</div>
+          <div class="ec-text">
+            <h3>CANYON</h3>
+            <p>Legion 14 & 19 UTC · 5 Routes · S/F/I Sections</p>
+          </div>
+          <div class="ec-arrow">›</div>
+        </div>
       </div>
     </div>
-    <div class="field">
-      <label>Teleports available?</label>
-      <select id="f-tele">
-        <option value="">— Select —</option>
-        <option>0</option><option>1</option><option>2</option><option>3</option>
-        <option>4</option><option>5</option><option>6–10</option><option>11–20</option><option>20+</option>
-      </select>
-    </div>
-    <button class="submit-btn" onclick="submitSignup()">✦ SUBMIT SIGN-UP ✦</button>
-    <div class="success-msg" id="success-msg"></div>
   </div>
-</div>
 
-<!-- ROSTER -->
-
-<div class="page" id="page-roster">
-  <div style="margin-top:16px;">
-    <div class="stats-bar">
-      <div class="stat-box total"><div class="num" id="stat-total">0</div><div class="lbl">Total</div></div>
-      <div class="stat-box l14"><div class="num" id="stat-14">0</div><div class="lbl">L14</div></div>
-      <div class="stat-box l19"><div class="num" id="stat-19">0</div><div class="lbl">L19</div></div>
-      <div class="stat-box abs"><div class="num" id="stat-abs">0</div><div class="lbl">Abstain</div></div>
+  <!-- ===== FOUNDRY ===== -->
+  <div class="event-page" id="event-foundry">
+    <div class="event-header">
+      <button class="back-btn" onclick="closeEvent()">← BACK</button>
+      <h2>⚔️ FOUNDRY LEGION</h2>
     </div>
-    <div class="roster-controls">
-      <button class="filter-btn active" onclick="setFilter('all',this)">All</button>
-      <button class="filter-btn" onclick="setFilter('14',this)">Legion 14</button>
-      <button class="filter-btn" onclick="setFilter('19',this)">Legion 19</button>
-      <button class="filter-btn" onclick="setFilter('none',this)">Abstain</button>
+    <div class="event-tabs">
+      <div class="etab active" onclick="showETab('foundry','signup',this)">📋 Sign Up</div>
+      <div class="etab admin-tab" id="ftab-roster" onclick="showETab('foundry','roster',this)">🗒️ Roster</div>
+      <div class="etab admin-tab" id="ftab-teams" onclick="showETab('foundry','teams',this)">🗺️ Teams</div>
+      <div class="etab admin-tab" id="ftab-match" onclick="showETab('foundry','match',this)">🏆 Match</div>
+      <div class="etab admin-tab" id="ftab-archive" onclick="showETab('foundry','archive',this)">📦 Archive</div>
     </div>
-    <div id="roster-list"></div>
-    <div class="empty-state" id="roster-empty"><div class="icon">❄️</div><p>No sign-ups yet.</p></div>
-    <button class="export-btn" onclick="exportCSV()">⬇ Export to CSV</button>
-    <button class="clear-btn" onclick="clearAll()">🗑 Clear All Data (Admin)</button>
-  </div>
-</div>
-
-<!-- TEAMS -->
-
-<div class="page" id="page-teams">
-  <div style="margin-top:16px;">
-    <div class="teams-pw-bar">
-      <p>Admin access required to assign team leads &amp; members.</p>
-      <div class="row">
-        <input type="password" id="teams-pw" placeholder="Admin password">
-        <button onclick="unlockTeams()">UNLOCK</button>
+    <div class="epages">
+      <!-- SIGNUP -->
+      <div class="epage active" id="foundry-signup">
+        <div class="card" style="margin-top:14px;">
+          <h3>🧊 Sign Up</h3>
+          <div id="f-already" style="display:none;background:rgba(61,214,140,0.08);border:1px solid rgba(61,214,140,0.3);border-radius:7px;padding:10px;margin-bottom:12px;font-size:0.85rem;color:#3dd68c;">✅ You're signed up! Update below if needed.</div>
+          <div class="field"><label>In-Game Username</label><input type="text" id="ff-name" placeholder="e.g. Mama Mac"></div>
+          <div class="field"><label>Player / Chief ID</label><input type="text" id="ff-id" placeholder="e.g. 123456789" inputmode="numeric"></div>
+          <div class="field">
+            <label>Which Legion can you do?</label>
+            <div class="radio-group">
+              <div class="rbtn" id="fl-14" onclick="selF('14')">Legion 14</div>
+              <div class="rbtn" id="fl-19" onclick="selF('19')">Legion 19</div>
+              <div class="rbtn" id="fl-none" onclick="selF('none')">Abstain</div>
+            </div>
+          </div>
+          <div class="field"><label>Teleports available?</label>
+            <select id="ff-tele">
+              <option value="">— Select —</option>
+              <option>0</option><option>1</option><option>2</option><option>3</option>
+              <option>4</option><option>5</option><option>6–10</option><option>11–20</option><option>20+</option>
+            </select>
+          </div>
+          <button class="btn btn-blue" onclick="submitFoundry()">✦ SUBMIT SIGN-UP ✦</button>
+          <div class="flash ok" id="f-flash"></div>
+        </div>
       </div>
-      <div class="teams-lock-msg" id="teams-lock-msg">🔒 View only — unlock to edit assignments</div>
+      <!-- ROSTER -->
+      <div class="epage" id="foundry-roster">
+        <div style="margin-top:14px;">
+          <div class="stats-bar cols4">
+            <div class="sbox"><div class="n" id="fs-total">0</div><div class="l">Total</div></div>
+            <div class="sbox"><div class="n" id="fs-14" style="color:var(--gold)">0</div><div class="l">L14</div></div>
+            <div class="sbox"><div class="n" id="fs-19" style="color:var(--purple)">0</div><div class="l">L19</div></div>
+            <div class="sbox"><div class="n" id="fs-abs" style="color:var(--red)">0</div><div class="l">Abstain</div></div>
+          </div>
+          <div class="filter-bar">
+            <button class="fbtn active" onclick="setFF('all',this)">All</button>
+            <button class="fbtn" onclick="setFF('14',this)">L14</button>
+            <button class="fbtn" onclick="setFF('19',this)">L19</button>
+            <button class="fbtn" onclick="setFF('none',this)">Abstain</button>
+          </div>
+          <div id="f-roster-list"></div>
+          <div class="empty" id="f-roster-empty"><div class="icon">❄️</div><p>No sign-ups yet.</p></div>
+          <button class="btn btn-green" onclick="exportCSV('foundry_signups','foundry')">⬇ Export CSV</button>
+        </div>
+      </div>
+      <!-- TEAMS -->
+      <div class="epage" id="foundry-teams">
+        <div style="margin-top:14px;">
+          <div class="ubox" id="f-ubox" style="display:none;"><h4>⚠️ UNASSIGNED (<span id="f-ucnt">0</span>)</h4><div id="f-ulist"></div></div>
+          <div class="map-grid" id="f-map-grid"></div>
+          <button class="btn btn-purple" onclick="saveFoundryTeams()">💾 SAVE TEAMS</button>
+          <div class="copy-section" id="f-copy-section" style="display:none;">
+            <div class="copy-title">📋 Copy for Whiteout Chat</div>
+            <button class="copy-all-btn" onclick="copyAllFoundry()">📋 COPY ALL 4 GROUPS</button>
+            <div class="copy-grid" id="f-copy-grid"></div>
+          </div>
+        </div>
+      </div>
+      <!-- MATCH -->
+      <div class="epage" id="foundry-match">
+        <div style="margin-top:14px;">
+          <div class="card" style="background:rgba(240,192,64,0.04);border-color:rgba(240,192,64,0.2);padding:10px 14px;">
+            <p style="font-size:0.8rem;color:#c0a030;">⭐ Tap ○ to mark attendance · Enter scores after match</p>
+          </div>
+          <div id="f-match-list"></div>
+          <div class="empty" id="f-match-empty"><div class="icon">⚔️</div><p>Sign-ups appear here on match day.</p></div>
+        </div>
+      </div>
+      <!-- ARCHIVE -->
+      <div class="epage" id="foundry-archive">
+        <div style="margin-top:14px;">
+          <div class="card">
+            <h3>📦 Archive & Reset</h3>
+            <div style="background:rgba(224,85,85,0.07);border:1px solid rgba(224,85,85,0.2);border-radius:7px;padding:10px;margin-bottom:10px;font-size:0.8rem;color:#c05050;">
+              ⚠️ Archives current event data then resets attendance & scores for next event.
+            </div>
+            <div class="field"><label>Event Name</label><input type="text" id="f-evname" placeholder="e.g. Foundry Week 23 — May 2026"></div>
+            <button class="btn btn-amber" onclick="archiveEvent('foundry')">🗄️ ARCHIVE & RESET</button>
+            <div class="flash ok" id="f-arch-flash"></div>
+          </div>
+          <h3 style="font-family:'Orbitron',monospace;font-size:0.72rem;color:#6a9cb8;letter-spacing:2px;margin:16px 0 8px;">PAST EVENTS</h3>
+          <div id="f-archive-list"></div>
+          <div class="empty" id="f-archive-empty"><div class="icon">📦</div><p>No archived events yet.</p></div>
+        </div>
+      </div>
     </div>
-    <div class="unassigned-box" id="ubox" style="display:none;">
-      <h3>⚠️ UNASSIGNED (<span id="ucnt">0</span>)</h3>
-      <div id="ulist"></div>
-    </div>
-    <div class="map-grid" id="map-grid"></div>
-    <button class="save-teams-btn" id="save-teams-btn" onclick="flashSaved()">💾 SAVE TEAM ASSIGNMENTS</button>
-
-```
-<!-- COPY FOR WHITEOUT -->
-<div class="copy-section" id="copy-section" style="display:none;">
-  <div class="copy-section-title">📋 Copy Team Messages for Whiteout Chat</div>
-  <button class="copy-all-btn" onclick="copyAll()">📋 COPY ALL 4 TEAMS AT ONCE</button>
-  <div class="copy-cards-grid" id="copy-cards-grid"></div>
-</div>
-```
-
   </div>
-</div>
 
-<!-- MATCH -->
-
-<div class="page" id="page-match">
-  <div style="margin-top:16px;">
-    <div class="admin-lock">
-      <input type="password" id="admin-pw" placeholder="Admin password to edit scores">
-      <button onclick="unlockAdmin()">UNLOCK</button>
+  <!-- ===== BEAR TRAP ===== -->
+  <div class="event-page" id="event-beartrap">
+    <div class="event-header">
+      <button class="back-btn" onclick="closeEvent()">← BACK</button>
+      <h2>🐻 BEAR TRAP</h2>
     </div>
-    <div class="lock-msg" id="lock-status">🔒 Scores locked — unlock to mark attendance &amp; enter scores</div>
-    <div id="match-list"></div>
-    <div class="empty-state" id="match-empty"><div class="icon">⚔️</div><p>Players who sign up will appear here.</p></div>
+    <div class="event-tabs">
+      <div class="etab active" onclick="showETab('beartrap','signup',this)">📋 Sign Up</div>
+      <div class="etab admin-tab" id="btab-scores" onclick="showETab('beartrap','scores',this)">🏆 Scores</div>
+      <div class="etab admin-tab" id="btab-archive" onclick="showETab('beartrap','archive',this)">📦 Archive</div>
+    </div>
+    <div class="epages">
+      <!-- SIGNUP -->
+      <div class="epage active" id="beartrap-signup">
+        <div class="card" style="margin-top:14px;">
+          <h3>🐻 Sign Up</h3>
+          <div id="bt-already" style="display:none;background:rgba(61,214,140,0.08);border:1px solid rgba(61,214,140,0.3);border-radius:7px;padding:10px;margin-bottom:12px;font-size:0.85rem;color:#3dd68c;">✅ You're signed up! Update below if needed.</div>
+          <div class="field"><label>In-Game Username</label><input type="text" id="bt-name" placeholder="e.g. Mama Mac"></div>
+          <div class="field"><label>Player / Chief ID</label><input type="text" id="bt-id" placeholder="e.g. 123456789" inputmode="numeric"></div>
+          <div class="field">
+            <label>Which Trap(s) can you do? (select all that apply)</label>
+            <div class="radio-group">
+              <div class="rbtn" id="bt-t1" onclick="toggleTrap('1')">Trap 1</div>
+              <div class="rbtn" id="bt-t2" onclick="toggleTrap('2')">Trap 2</div>
+              <div class="rbtn" id="bt-t3" onclick="toggleTrap('3')">Trap 3</div>
+            </div>
+          </div>
+          <button class="btn btn-blue" style="background:linear-gradient(135deg,#4a1a1a,#7a2a2a);border-color:#ff8080;color:#fff;" onclick="submitBearTrap()">✦ SUBMIT SIGN-UP ✦</button>
+          <div class="flash ok" id="bt-flash"></div>
+        </div>
+      </div>
+      <!-- SCORES -->
+      <div class="epage" id="beartrap-scores">
+        <div style="margin-top:14px;">
+          <div class="trap-tabs">
+            <div class="ttab active" id="trap-tab-1" onclick="showTrap(1)">🐻 TRAP 1</div>
+            <div class="ttab" id="trap-tab-2" onclick="showTrap(2)">🐻 TRAP 2</div>
+            <div class="ttab" id="trap-tab-3" onclick="showTrap(3)">🐻 TRAP 3</div>
+          </div>
+          <div id="bt-scores-list"></div>
+          <div class="empty" id="bt-scores-empty"><div class="icon">🐻</div><p>No players signed up for this trap yet.</p></div>
+        </div>
+      </div>
+      <!-- ARCHIVE -->
+      <div class="epage" id="beartrap-archive">
+        <div style="margin-top:14px;">
+          <div class="card">
+            <h3>📦 Archive & Reset</h3>
+            <div style="background:rgba(224,85,85,0.07);border:1px solid rgba(224,85,85,0.2);border-radius:7px;padding:10px;margin-bottom:10px;font-size:0.8rem;color:#c05050;">
+              ⚠️ Archives all trap scores then resets for next Bear Trap event.
+            </div>
+            <div class="field"><label>Event Name</label><input type="text" id="bt-evname" placeholder="e.g. Bear Trap — May 2026"></div>
+            <button class="btn btn-amber" onclick="archiveEvent('beartrap')">🗄️ ARCHIVE & RESET</button>
+            <div class="flash ok" id="bt-arch-flash"></div>
+          </div>
+          <h3 style="font-family:'Orbitron',monospace;font-size:0.72rem;color:#6a9cb8;letter-spacing:2px;margin:16px 0 8px;">PAST EVENTS</h3>
+          <div id="bt-archive-list"></div>
+          <div class="empty" id="bt-archive-empty"><div class="icon">📦</div><p>No archived events yet.</p></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== CANYON ===== -->
+  <div class="event-page" id="event-canyon">
+    <div class="event-header">
+      <button class="back-btn" onclick="closeEvent()">← BACK</button>
+      <h2>🏔️ CANYON</h2>
+    </div>
+    <div class="event-tabs">
+      <div class="etab active" onclick="showETab('canyon','signup',this)">📋 Sign Up</div>
+      <div class="etab admin-tab" id="ctab-roster" onclick="showETab('canyon','roster',this)">🗒️ Roster</div>
+      <div class="etab admin-tab" id="ctab-teams" onclick="showETab('canyon','teams',this)">🗺️ Routes</div>
+      <div class="etab admin-tab" id="ctab-match" onclick="showETab('canyon','match',this)">🏆 Match</div>
+      <div class="etab admin-tab" id="ctab-archive" onclick="showETab('canyon','archive',this)">📦 Archive</div>
+    </div>
+    <div class="epages">
+      <!-- SIGNUP -->
+      <div class="epage active" id="canyon-signup">
+        <div class="card" style="margin-top:14px;">
+          <h3>🏔️ Sign Up</h3>
+          <div id="c-already" style="display:none;background:rgba(61,214,140,0.08);border:1px solid rgba(61,214,140,0.3);border-radius:7px;padding:10px;margin-bottom:12px;font-size:0.85rem;color:#3dd68c;">✅ You're signed up! Update below if needed.</div>
+          <div class="field"><label>In-Game Username</label><input type="text" id="cf-name" placeholder="e.g. Mama Mac"></div>
+          <div class="field"><label>Player / Chief ID</label><input type="text" id="cf-id" placeholder="e.g. 123456789" inputmode="numeric"></div>
+          <div class="field">
+            <label>Which Legion?</label>
+            <div class="radio-group">
+              <div class="rbtn" id="cl-14" onclick="selC('14')">Legion 14</div>
+              <div class="rbtn" id="cl-19" onclick="selC('19')">Legion 19</div>
+              <div class="rbtn" id="cl-none" onclick="selC('none')">Abstain</div>
+            </div>
+          </div>
+          <button class="btn btn-blue" style="background:linear-gradient(135deg,#2a1a4a,#4a2a7a);border-color:#b89dff;color:#fff;" onclick="submitCanyon()">✦ SUBMIT SIGN-UP ✦</button>
+          <div class="flash ok" id="c-flash"></div>
+        </div>
+      </div>
+      <!-- ROSTER -->
+      <div class="epage" id="canyon-roster">
+        <div style="margin-top:14px;">
+          <div class="stats-bar cols3">
+            <div class="sbox"><div class="n" id="cs-total">0</div><div class="l">Total</div></div>
+            <div class="sbox"><div class="n" id="cs-14" style="color:var(--gold)">0</div><div class="l">L14</div></div>
+            <div class="sbox"><div class="n" id="cs-19" style="color:var(--purple)">0</div><div class="l">L19</div></div>
+          </div>
+          <div class="filter-bar">
+            <button class="fbtn active" onclick="setCF('all',this)">All</button>
+            <button class="fbtn" onclick="setCF('14',this)">L14</button>
+            <button class="fbtn" onclick="setCF('19',this)">L19</button>
+          </div>
+          <div id="c-roster-list"></div>
+          <div class="empty" id="c-roster-empty"><div class="icon">🏔️</div><p>No sign-ups yet.</p></div>
+          <button class="btn btn-green" onclick="exportCSV('canyon_signups','canyon')">⬇ Export CSV</button>
+        </div>
+      </div>
+      <!-- ROUTES -->
+      <div class="epage" id="canyon-teams">
+        <div style="margin-top:14px;">
+          <div class="card">
+            <div style="display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap;">
+              <div class="field" style="flex:1;margin:0;">
+                <label>Section (assigned by game)</label>
+                <select id="c-section" onchange="saveCanyonMeta()">
+                  <option value="">— Select Section —</option>
+                  <option value="S">S Zone (Left/Blue)</option>
+                  <option value="F">F Zone (Right/Red)</option>
+                  <option value="I">I Zone (Bottom/Blue)</option>
+                </select>
+              </div>
+              <div class="field" style="flex:1;margin:0;">
+                <label>Legion</label>
+                <select id="c-legion-sel" onchange="saveCanyonMeta()">
+                  <option value="14">Legion 14 UTC</option>
+                  <option value="19">Legion 19 UTC</option>
+                </select>
+              </div>
+            </div>
+          </div>
+          <div class="ubox" id="c-ubox" style="display:none;"><h4>⚠️ UNASSIGNED (<span id="c-ucnt">0</span>)</h4><div id="c-ulist"></div></div>
+          <div class="route-grid" id="c-route-grid"></div>
+          <button class="btn btn-purple" onclick="saveCanyonTeams()">💾 SAVE ROUTES</button>
+          <div class="copy-section" id="c-copy-section" style="display:none;">
+            <div class="copy-title">📋 Copy for Whiteout Chat</div>
+            <button class="copy-all-btn" onclick="copyAllCanyon()">📋 COPY ALL 5 ROUTES</button>
+            <div class="copy-grid" id="c-copy-grid"></div>
+          </div>
+        </div>
+      </div>
+      <!-- MATCH -->
+      <div class="epage" id="canyon-match">
+        <div style="margin-top:14px;">
+          <div class="card" style="background:rgba(155,109,255,0.04);border-color:rgba(155,109,255,0.2);padding:10px 14px;">
+            <p style="font-size:0.8rem;color:#9b6dff;">⭐ Mark attendance and enter scores per player</p>
+          </div>
+          <div id="c-match-list"></div>
+          <div class="empty" id="c-match-empty"><div class="icon">🏔️</div><p>Sign-ups appear here on match day.</p></div>
+        </div>
+      </div>
+      <!-- ARCHIVE -->
+      <div class="epage" id="canyon-archive">
+        <div style="margin-top:14px;">
+          <div class="card">
+            <h3>📦 Archive & Reset</h3>
+            <div style="background:rgba(224,85,85,0.07);border:1px solid rgba(224,85,85,0.2);border-radius:7px;padding:10px;margin-bottom:10px;font-size:0.8rem;color:#c05050;">
+              ⚠️ Archives current event data then resets for next Canyon event.
+            </div>
+            <div class="field"><label>Event Name</label><input type="text" id="c-evname" placeholder="e.g. Canyon — May 2026"></div>
+            <button class="btn btn-amber" onclick="archiveEvent('canyon')">🗄️ ARCHIVE & RESET</button>
+            <div class="flash ok" id="c-arch-flash"></div>
+          </div>
+          <h3 style="font-family:'Orbitron',monospace;font-size:0.72rem;color:#6a9cb8;letter-spacing:2px;margin:16px 0 8px;">PAST EVENTS</h3>
+          <div id="c-archive-list"></div>
+          <div class="empty" id="c-archive-empty"><div class="icon">📦</div><p>No archived events yet.</p></div>
+        </div>
+      </div>
+    </div>
   </div>
 </div>
 
 <script>
-const PASS = "fc10";
-let adminUnlocked = false, teamsUnlocked = false;
-let curFilter = 'all', selLegion = '';
+const SURL = 'https://qsdnhushgegmjyaehjqh.supabase.co';
+const SKEY = 'sb_publishable_WgelcWWRdoDThBw4lwtyww_JKVEK1KS';
+const sb = supabase.createClient(SURL, SKEY);
 
-const GROUPS = [
-  {id:'g1',label:'G1',cls:'g1',name:'West Zone',
-   zones:['Team 1 Safe Zone','Arsenal Supplies','Repair Facility I','Repair Facility II','Prototype Site I','Munitions Warehouse']},
-  {id:'g2',label:'G2',cls:'g2',name:'South Zone',
-   zones:['Central Transit Station','Arsenal Supplies','Munitions Warehouse']},
-  {id:'g3',label:'G3',cls:'g3',name:'East Zone',
-   zones:['Team 2 Safe Zone','Arsenal Supplies','Repair Facility III','Prototype Site II']},
-  {id:'g4',label:'G4',cls:'g4',name:'North Zone',
-   zones:['Boiler Room','Mercenary Camp','Repair Facility IV','Arsenal Supplies']}
+let CU = null, isAdmin = false;
+let fLegion = '', cLegion = '', btTraps = [];
+let fTeams = {}, cTeams = {}, cMeta = {section:'',legion:'14'};
+let fFilter = 'all', cFilter = 'all', curTrap = 1;
+
+const FGROUPS = [
+  {id:'g1',label:'G1',cls:'g1',name:'West Zone',zones:['Team 1 Safe Zone','Arsenal Supplies','Repair Fac. I & II','Prototype Site I','Munitions Warehouse']},
+  {id:'g2',label:'G2',cls:'g2',name:'South Zone',zones:['Central Transit Station','Arsenal Supplies','Munitions Warehouse']},
+  {id:'g3',label:'G3',cls:'g3',name:'East Zone',zones:['Team 2 Safe Zone','Arsenal Supplies','Repair Fac. III','Prototype Site II']},
+  {id:'g4',label:'G4',cls:'g4',name:'North Zone',zones:['Boiler Room','Mercenary Camp','Repair Fac. IV','Arsenal Supplies']}
+];
+const CROUTES = [
+  {id:'r1',label:'Route 1',cls:'r1',emoji:'🩷'},
+  {id:'r2',label:'Route 2',cls:'r2',emoji:'💚'},
+  {id:'r3',label:'Route 3',cls:'r3',emoji:'🧡'},
+  {id:'r4',label:'Route 4',cls:'r4',emoji:'❤️'},
+  {id:'r5',label:'Route 5',cls:'r5',emoji:'💜'}
 ];
 
-// Storage
-const getP = () => { try{return JSON.parse(localStorage.getItem('wos_p')||'[]');}catch{return[];} };
-const saveP = a => localStorage.setItem('wos_p', JSON.stringify(a));
-const getT = () => {
-  try{
-    const raw = JSON.parse(localStorage.getItem('wos_t')||'{}');
-    GROUPS.forEach(g=>{ if(!raw[g.id]) raw[g.id]={lead:'',members:[]}; });
-    return raw;
-  }catch{
-    const t={};GROUPS.forEach(g=>t[g.id]={lead:'',members:[]});return t;
-  }
-};
-const saveT = o => localStorage.setItem('wos_t', JSON.stringify(o));
 const esc = s => String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+const fmt = n => Number(n||0).toLocaleString();
 
-// Tabs
-function showTab(tab, el) {
-  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
-  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
-  document.getElementById('page-'+tab).classList.add('active');
+// ===== INIT =====
+async function init() {
+  const { data: { session } } = await sb.auth.getSession();
+  if (session) await onLogin(session.user);
+  else showLogin();
+}
+
+function showLogin() {
+  document.getElementById('loading-screen').style.display = 'none';
+  document.getElementById('login-screen').style.display = 'flex';
+}
+
+async function onLogin(user) {
+  CU = user;
+  const { data } = await sb.from('admins').select('id').eq('user_id', user.id).maybeSingle();
+  isAdmin = !!data;
+  document.getElementById('loading-screen').style.display = 'none';
+  document.getElementById('login-screen').style.display = 'none';
+  document.getElementById('app').style.display = 'block';
+  document.getElementById('page-home').style.display = 'block';
+  const name = user.user_metadata?.username || user.email?.split('@')[0] || 'Player';
+  document.getElementById('uchip').textContent = (isAdmin?'⭐ ':'')+name;
+  if (isAdmin) document.querySelectorAll('.admin-tab').forEach(t=>t.classList.add('show'));
+}
+
+// ===== AUTH =====
+function toggleAuth(reg) {
+  document.getElementById('lform').style.display = reg?'none':'block';
+  document.getElementById('sform').style.display = reg?'block':'none';
+}
+async function doLogin() {
+  const e=document.getElementById('l-email').value.trim(), p=document.getElementById('l-pass').value;
+  const err=document.getElementById('lerr'); err.style.display='none';
+  const {data,error}=await sb.auth.signInWithPassword({email:e,password:p});
+  if(error){err.textContent=error.message;err.style.display='block';return;}
+  await onLogin(data.user);
+}
+async function doSignup() {
+  const n=document.getElementById('s-name').value.trim(), e=document.getElementById('s-email').value.trim(), p=document.getElementById('s-pass').value;
+  const err=document.getElementById('serr'); err.style.display='none';
+  if(!n){err.textContent='Enter your in-game name.';err.style.display='block';return;}
+  const {data,error}=await sb.auth.signUp({email:e,password:p,options:{data:{username:n}}});
+  if(error){err.textContent=error.message;err.style.display='block';return;}
+  if(data.user) await onLogin(data.user);
+}
+async function doLogout() {
+  await sb.auth.signOut(); CU=null; isAdmin=false;
+  document.getElementById('app').style.display='none';
+  document.getElementById('page-home').style.display='none';
+  document.querySelectorAll('.event-page').forEach(p=>p.classList.remove('active'));
+  showLogin();
+}
+
+// ===== NAVIGATION =====
+function openEvent(ev) {
+  document.getElementById('page-home').style.display='none';
+  document.querySelectorAll('.event-page').forEach(p=>p.classList.remove('active'));
+  document.getElementById('event-'+ev).classList.add('active');
+  if(ev==='foundry') prefillFoundry();
+  if(ev==='beartrap') prefillBearTrap();
+  if(ev==='canyon') prefillCanyon();
+}
+function closeEvent() {
+  document.querySelectorAll('.event-page').forEach(p=>p.classList.remove('active'));
+  document.getElementById('page-home').style.display='block';
+}
+function showETab(ev, tab, el) {
+  const prefix = ev===('foundry')?'foundry':ev===('beartrap')?'beartrap':'canyon';
+  document.querySelectorAll(`#event-${ev} .epage`).forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll(`#event-${ev} .etab`).forEach(t=>t.classList.remove('active'));
+  document.getElementById(prefix+'-'+tab).classList.add('active');
   el.classList.add('active');
-  if(tab==='roster') renderRoster();
-  if(tab==='teams') renderTeams();
-  if(tab==='match') renderMatch();
+  if(prefix==='foundry'&&tab==='roster') renderFRoster();
+  if(prefix==='foundry'&&tab==='teams') renderFTeams();
+  if(prefix==='foundry'&&tab==='match') renderFMatch();
+  if(prefix==='foundry'&&tab==='archive') renderFArchive();
+  if(prefix==='beartrap'&&tab==='scores') renderBTScores();
+  if(prefix==='beartrap'&&tab==='archive') renderBTArchive();
+  if(prefix==='canyon'&&tab==='roster') renderCRoster();
+  if(prefix==='canyon'&&tab==='teams') renderCTeams();
+  if(prefix==='canyon'&&tab==='match') renderCMatch();
+  if(prefix==='canyon'&&tab==='archive') renderCArchive();
 }
 
-// Legion picker
-function selectLegion(v) {
-  selLegion = v;
-  ['14','19','none'].forEach(x => {
-    document.getElementById('btn-'+x).className = 'radio-btn' + (x===v?' sel-'+v:'');
-  });
-}
-
-// Sign-up
-function submitSignup() {
-  const name = document.getElementById('f-name').value.trim();
-  const pid  = document.getElementById('f-id').value.trim();
-  const tele = document.getElementById('f-tele').value;
-  if(!name){alert('Enter your username.');return;}
-  if(!pid){alert('Enter your Player ID.');return;}
-  if(!selLegion){alert('Select a Foundry Legion option.');return;}
-  if(!tele){alert('Select your teleport count.');return;}
-  const players = getP();
-  const idx = players.findIndex(p=>p.pid===pid);
-  if(idx>=0){
-    players[idx]={...players[idx],name,legion:selLegion,teleports:tele};
-    saveP(players); flashMsg('✅ Sign-up updated!');
+// ===== FOUNDRY =====
+async function prefillFoundry() {
+  const {data}=await sb.from('foundry_signups').select('*').eq('user_id',CU.id).maybeSingle();
+  if(data){
+    document.getElementById('f-already').style.display='block';
+    document.getElementById('ff-name').value=data.username||'';
+    document.getElementById('ff-id').value=data.player_id||'';
+    if(data.legion)selF(data.legion);
+    if(data.teleports)document.getElementById('ff-tele').value=data.teleports;
   } else {
-    players.push({name,pid,legion:selLegion,teleports:tele,attended:false,score:''});
-    saveP(players); flashMsg('✅ Sign-up recorded! See you on the battlefield.');
+    document.getElementById('f-already').style.display='none';
+    const n=CU.user_metadata?.username; if(n)document.getElementById('ff-name').value=n;
   }
-  document.getElementById('f-name').value='';
-  document.getElementById('f-id').value='';
-  document.getElementById('f-tele').value='';
-  selLegion='';
-  ['14','19','none'].forEach(x=>document.getElementById('btn-'+x).className='radio-btn');
 }
-function flashMsg(m){
-  const el=document.getElementById('success-msg');
-  el.textContent=m;el.style.display='block';
-  setTimeout(()=>el.style.display='none',3500);
+function selF(v){
+  fLegion=v;
+  ['14','19','none'].forEach(x=>document.getElementById('fl-'+x).className='rbtn'+(x===v?' sel':''));
+}
+async function submitFoundry(){
+  const name=document.getElementById('ff-name').value.trim(), pid=document.getElementById('ff-id').value.trim(), tele=document.getElementById('ff-tele').value;
+  if(!name||!pid||!fLegion||!tele){alert('Please fill in all fields.');return;}
+  const {error}=await sb.from('foundry_signups').upsert({user_id:CU.id,username:name,player_id:pid,legion:fLegion,teleports:tele,attended:false,score:''},{onConflict:'user_id'});
+  if(error){alert(error.message);return;}
+  document.getElementById('f-already').style.display='block';
+  showFlash('f-flash','✅ Sign-up saved!');
 }
 
-// Roster
-function setFilter(f,btn){
-  curFilter=f;
-  document.querySelectorAll('.filter-btn').forEach(b=>b.classList.remove('active'));
-  btn.classList.add('active');
-  renderRoster();
-}
-function renderRoster(){
-  const players=getP();
-  const fil=curFilter==='all'?players:players.filter(p=>p.legion===curFilter);
-  document.getElementById('stat-total').textContent=players.length;
-  document.getElementById('stat-14').textContent=players.filter(p=>p.legion==='14').length;
-  document.getElementById('stat-19').textContent=players.filter(p=>p.legion==='19').length;
-  document.getElementById('stat-abs').textContent=players.filter(p=>p.legion==='none').length;
-  const list=document.getElementById('roster-list');
-  const empty=document.getElementById('roster-empty');
+async function renderFRoster(){
+  const {data:all}=await sb.from('foundry_signups').select('*').order('username');
+  const players=all||[];
+  const fil=fFilter==='all'?players:players.filter(p=>p.legion===fFilter);
+  document.getElementById('fs-total').textContent=players.length;
+  document.getElementById('fs-14').textContent=players.filter(p=>p.legion==='14').length;
+  document.getElementById('fs-19').textContent=players.filter(p=>p.legion==='19').length;
+  document.getElementById('fs-abs').textContent=players.filter(p=>p.legion==='none').length;
+  const list=document.getElementById('f-roster-list'), empty=document.getElementById('f-roster-empty');
   if(!fil.length){list.innerHTML='';empty.style.display='block';return;}
   empty.style.display='none';
-  list.innerHTML=fil.map(p=>{
-    const lbl=p.legion==='14'?'Legion 14':p.legion==='19'?'Legion 19':'Abstain';
-    const cls=p.legion==='14'?'l14':p.legion==='19'?'l19':'none';
-    return `<div class="player-row">
-      <div class="name-col"><div class="player-name">${esc(p.name)}</div><div class="player-id">ID: ${esc(p.pid)}</div></div>
-      <span class="badge ${cls}">${lbl}</span>
-      <span class="tele-badge">🌀 ${esc(p.teleports)}</span>
-    </div>`;
-  }).join('');
+  list.innerHTML=fil.map(p=>`<div class="prow">
+    <div class="ncol"><div class="pname">${esc(p.username)}</div><div class="pid">ID: ${esc(p.player_id)}</div></div>
+    <span class="badge ${p.legion==='14'?'l14':p.legion==='19'?'l19':'abs'}">${p.legion==='14'?'L14':p.legion==='19'?'L19':'ABS'}</span>
+    <span style="font-size:0.75rem;color:var(--frost);">🌀 ${esc(p.teleports)}</span>
+  </div>`).join('');
 }
+function setFF(f,btn){fFilter=f;document.querySelectorAll('#foundry-roster .fbtn').forEach(b=>b.classList.remove('active'));btn.classList.add('active');renderFRoster();}
 
-// Teams
-function unlockTeams(){
-  if(document.getElementById('teams-pw').value===PASS){
-    teamsUnlocked=true;
-    const msg=document.getElementById('teams-lock-msg');
-    msg.textContent='🔓 Unlocked — assign leads and members';
-    msg.style.color='#3dd68c';
-    document.getElementById('save-teams-btn').style.display='block';
-    renderTeams();
-    renderCopyCards();
-  } else {
-    const msg=document.getElementById('teams-lock-msg');
-    msg.textContent='❌ Incorrect password';
-    msg.style.color='#e05555';
-  }
+async function loadFTeams(){
+  const {data}=await sb.from('foundry_teams').select('*').eq('id',1).maybeSingle();
+  if(data?.assignments)fTeams=data.assignments;
+  else{fTeams={};FGROUPS.forEach(g=>fTeams[g.id]={lead:'',members:[]});}
 }
-
-function renderTeams(){
-  const players=getP();
-  if(teamsUnlocked) setTimeout(renderCopyCards,50);
-  const teams=getT();
+async function renderFTeams(){
+  await loadFTeams();
+  const {data:all}=await sb.from('foundry_signups').select('*').order('username');
+  const players=all||[];
   const assigned=new Set();
-  GROUPS.forEach(g=>{
-    const t=teams[g.id];
-    if(t.lead) assigned.add(t.lead);
-    (t.members||[]).forEach(pid=>assigned.add(pid));
-  });
-  const unassigned=players.filter(p=>!assigned.has(p.pid));
-  const ubox=document.getElementById('ubox');
-  if(players.length){
-    ubox.style.display='block';
-    document.getElementById('ucnt').textContent=unassigned.length;
-    document.getElementById('ulist').innerHTML=unassigned.length
-      ?unassigned.map(p=>`<span class="uchip">👤 ${esc(p.name)}</span>`).join('')
-      :'<span style="font-size:0.85rem;color:#3dd68c;">✅ All players assigned!</span>';
-  }
-
-  document.getElementById('map-grid').innerHTML=GROUPS.map(g=>{
-    const t=teams[g.id];
-    const leadP=players.find(p=>p.pid===t.lead);
-    const mems=(t.members||[]).map(pid=>players.find(p=>p.pid===pid)).filter(Boolean);
-    const total=(leadP?1:0)+mems.length;
-
-    // options for lead dropdown (exclude current members)
-    const leadOpts=players.filter(p=>!(t.members||[]).includes(p.pid));
-    // options to add as member (exclude lead and existing members)
-    const addOpts=players.filter(p=>p.pid!==t.lead&&!(t.members||[]).includes(p.pid));
-
-    const leadSection = teamsUnlocked
-      ? `<div class="small-lbl">⭐ Team Lead</div>
-         <select class="gselect" onchange="setLead('${g.id}',this.value)">
-           <option value="">— No lead —</option>
-           ${leadOpts.map(p=>`<option value="${esc(p.pid)}"${p.pid===t.lead?' selected':''}>${esc(p.name)}</option>`).join('')}
-         </select>`
-      : `<div class="small-lbl">⭐ Team Lead</div>
-         <div class="lead-box">${leadP?`<span>⭐</span><span class="ln">${esc(leadP.name)}</span>`:'<span class="le">No lead assigned</span>'}</div>`;
-
-    const memsSection = teamsUnlocked
-      ? `<div class="small-lbl" style="margin-top:6px;">👥 Members (${mems.length})</div>
-         ${mems.map(m=>`<div class="mchip">
-           <span class="mn">${esc(m.name)}</span>
-           <span class="mt">🌀${esc(m.teleports)}</span>
-           <button class="mr" onclick="removeMem('${g.id}','${m.pid}')">✕</button>
-         </div>`).join('')}
-         ${!mems.length?'<div class="no-mem">No members yet</div>':''}
-         <div class="add-row">
-           <select id="add-${g.id}">
-             <option value="">— Add player —</option>
-             ${addOpts.map(p=>`<option value="${esc(p.pid)}">${esc(p.name)}</option>`).join('')}
-           </select>
-           <button onclick="addMem('${g.id}')">+ ADD</button>
-         </div>`
-      : `<div class="small-lbl" style="margin-top:6px;">👥 Members (${mems.length})</div>
-         ${mems.map(m=>`<div class="mchip">
-           <span class="mn">${esc(m.name)}</span>
-           <span class="mt">🌀${esc(m.teleports)}</span>
-         </div>`).join('')}
-         ${!mems.length?'<div class="no-mem">No members yet</div>':''}`;
-
+  FGROUPS.forEach(g=>{const t=fTeams[g.id]||{};if(t.lead)assigned.add(t.lead);(t.members||[]).forEach(id=>assigned.add(id));});
+  const unassigned=players.filter(p=>!assigned.has(p.user_id));
+  const ubox=document.getElementById('f-ubox');
+  if(players.length){ubox.style.display='block';document.getElementById('f-ucnt').textContent=unassigned.length;
+    document.getElementById('f-ulist').innerHTML=unassigned.length?unassigned.map(p=>`<span class="uchip">👤 ${esc(p.username)}</span>`).join(''):'<span style="font-size:0.82rem;color:#3dd68c;">✅ All assigned!</span>';}
+  document.getElementById('f-map-grid').innerHTML=FGROUPS.map(g=>{
+    const t=fTeams[g.id]||{lead:'',members:[]};
+    const lp=players.find(p=>p.user_id===t.lead);
+    const mems=(t.members||[]).map(id=>players.find(p=>p.user_id===id)).filter(Boolean);
+    const total=(lp?1:0)+mems.length;
+    const lOpts=players.filter(p=>!(t.members||[]).includes(p.user_id));
+    const aOpts=players.filter(p=>p.user_id!==t.lead&&!(t.members||[]).includes(p.user_id));
     return `<div class="gcard ${g.cls}">
-      <div class="ghead">
-        <span class="glabel">${g.label}</span>
-        <div><div class="gname">${g.name}</div></div>
-        <span class="gcount">${total}p</span>
-      </div>
+      <div class="ghead"><span class="glabel">${g.label}</span><div><div class="gname">${g.name}</div></div><span class="gcnt">${total}p</span></div>
       <div class="gbody">
-        ${leadSection}
-        <div class="zone-wrap">
-          <div class="small-lbl">📍 Zones</div>
-          ${g.zones.map(z=>`<span class="ztag">${z}</span>`).join('')}
+        <div class="slbl">⭐ Lead</div>
+        <select class="gsel" onchange="setFLead('${g.id}',this.value)">
+          <option value="">— No lead —</option>
+          ${lOpts.map(p=>`<option value="${esc(p.user_id)}"${p.user_id===t.lead?' selected':''}>${esc(p.username)}</option>`).join('')}
+        </select>
+        <div class="slbl">📍 Zones</div>
+        <div style="margin-bottom:6px;">${g.zones.map(z=>`<span class="ztag">${z}</span>`).join('')}</div>
+        <div class="slbl">👥 Members (${mems.length})</div>
+        ${mems.map(m=>`<div class="mchip"><span class="mn">${esc(m.username)}</span><span class="mt">🌀${esc(m.teleports)}</span><button class="mr" onclick="removeFMem('${g.id}','${m.user_id}')">✕</button></div>`).join('')}
+        ${!mems.length?'<div class="nomem">No members yet</div>':''}
+        <div class="addrow">
+          <select id="fadd-${g.id}"><option value="">— Add —</option>${aOpts.map(p=>`<option value="${esc(p.user_id)}">${esc(p.username)}</option>`).join('')}</select>
+          <button onclick="addFMem('${g.id}')">+ ADD</button>
         </div>
-        ${memsSection}
       </div>
     </div>`;
   }).join('');
+  renderFCopyCards(players);
 }
-
-function setLead(gid,pid){
-  const teams=getT();
-  teams[gid].members=(teams[gid].members||[]).filter(p=>p!==pid);
-  teams[gid].lead=pid;
-  saveT(teams); renderTeams();
+function setFLead(gid,uid){if(!fTeams[gid])fTeams[gid]={lead:'',members:[]};fTeams[gid].members=(fTeams[gid].members||[]).filter(p=>p!==uid);fTeams[gid].lead=uid;renderFTeams();}
+function addFMem(gid){const s=document.getElementById('fadd-'+gid),uid=s.value;if(!uid)return;if(!fTeams[gid])fTeams[gid]={lead:'',members:[]};if(!fTeams[gid].members.includes(uid))fTeams[gid].members.push(uid);renderFTeams();}
+function removeFMem(gid,uid){if(!fTeams[gid])return;fTeams[gid].members=(fTeams[gid].members||[]).filter(p=>p!==uid);renderFTeams();}
+async function saveFoundryTeams(){
+  const {error}=await sb.from('foundry_teams').upsert({id:1,assignments:fTeams});
+  if(error){alert(error.message);return;}
+  const btn=document.querySelector('#foundry-teams .btn-purple');
+  btn.textContent='✅ SAVED!';setTimeout(()=>btn.textContent='💾 SAVE TEAMS',2000);
+  document.getElementById('f-copy-section').style.display='block';
 }
-function addMem(gid){
-  const sel=document.getElementById('add-'+gid);
-  const pid=sel.value; if(!pid) return;
-  const teams=getT();
-  if(!teams[gid].members) teams[gid].members=[];
-  if(!teams[gid].members.includes(pid)) teams[gid].members.push(pid);
-  saveT(teams); renderTeams();
+function buildFMsg(g,players){
+  const t=fTeams[g.id]||{};const lp=players.find(p=>p.user_id===t.lead);
+  const mems=(t.members||[]).map(id=>players.find(p=>p.user_id===id)).filter(Boolean);
+  const em={g1:'🔵',g2:'🔴',g3:'🟢',g4:'🟡'};
+  let m=em[g.id]+' '+g.label+' — '+g.name+'\n━━━━━━━━━━━━━━━\n';
+  m+='📍 '+g.zones.join(', ')+'\n━━━━━━━━━━━━━━━\n';
+  m+='⭐ Lead: '+(lp?lp.username+' [🌀'+lp.teleports+']':'TBD')+'\n';
+  if(mems.length){m+='👥 Team:\n';mems.forEach(p=>{m+='  • '+p.username+' [🌀'+p.teleports+']\n';});}
+  return m+'━━━━━━━━━━━━━━━';
 }
-function removeMem(gid,pid){
-  const teams=getT();
-  teams[gid].members=(teams[gid].members||[]).filter(p=>p!==pid);
-  saveT(teams); renderTeams();
+async function renderFCopyCards(players){
+  if(!players){const{data}=await sb.from('foundry_signups').select('*');players=data||[];}
+  document.getElementById('f-copy-section').style.display='block';
+  const em={g1:'🔵',g2:'🔴',g3:'🟢',g4:'🟡'};
+  document.getElementById('f-copy-grid').innerHTML=FGROUPS.map(g=>`<div class="ccard ${g.cls}">
+    <div class="cprev">${esc(buildFMsg(g,players))}</div>
+    <button class="cbtn" id="fcbtn-${g.id}" onclick="copyFTeam('${g.id}')">${em[g.id]} COPY ${g.label}</button>
+  </div>`).join('');
 }
-function flashSaved(){
-  const btn=document.getElementById('save-teams-btn');
-  btn.textContent='✅ SAVED!';btn.style.color='#3dd68c';btn.style.borderColor='#3dd68c';
-  setTimeout(()=>{btn.textContent='💾 SAVE TEAM ASSIGNMENTS';btn.style.color='';btn.style.borderColor='';},2000);
-  renderCopyCards();
+async function copyFTeam(gid){
+  const{data}=await sb.from('foundry_signups').select('*');
+  const g=FGROUPS.find(x=>x.id===gid),msg=buildFMsg(g,data||[]);
+  copyText(msg,'fcbtn-'+gid);
 }
-
-// ===== COPY FOR WHITEOUT =====
-function buildTeamMsg(g){
-  const players=getP(), teams=getT(), t=teams[g.id];
-  const leadP=players.find(p=>p.pid===t.lead);
-  const mems=(t.members||[]).map(pid=>players.find(p=>p.pid===pid)).filter(Boolean);
-  const emojis={g1:'🔵',g2:'🔴',g3:'🟢',g4:'🟡'};
-  let msg = emojis[g.id]+' '+g.label+' — '+g.name+'\n';
-  msg += '━━━━━━━━━━━━━━━\n';
-  msg += '📍 Zones: '+g.zones.join(', ')+'\n';
-  msg += '━━━━━━━━━━━━━━━\n';
-  if(leadP){
-    msg += '⭐ Lead: '+leadP.name+' [🌀'+leadP.teleports+']\n';
-  } else {
-    msg += '⭐ Lead: TBD\n';
-  }
-  if(mems.length){
-    msg += '👥 Team:\n';
-    mems.forEach(m=>{ msg += '  • '+m.name+' [🌀'+m.teleports+']\n'; });
-  } else {
-    msg += '👥 Team: (none assigned)\n';
-  }
-  msg += '━━━━━━━━━━━━━━━';
-  return msg;
+async function copyAllFoundry(){
+  const{data}=await sb.from('foundry_signups').select('*');
+  copyText(FGROUPS.map(g=>buildFMsg(g,data||[])).join('\n\n'),null,document.querySelector('.copy-all-btn'));
 }
-
-function renderCopyCards(){
-  const section=document.getElementById('copy-section');
-  const grid=document.getElementById('copy-cards-grid');
-  section.style.display='block';
-  grid.innerHTML=GROUPS.map(g=>{
-    const msg=buildTeamMsg(g);
-    const emojis={g1:'🔵',g2:'🔴',g3:'🟢',g4:'🟡'};
-    return `<div class="copy-card ${g.cls}">
-      <div class="copy-preview" id="prev-${g.id}">${esc(msg)}</div>
-      <button class="copy-btn" id="cbtn-${g.id}" onclick="copyTeam('${g.id}')">${emojis[g.id]} COPY ${g.label}</button>
-    </div>`;
-  }).join('');
-}
-
-function copyTeam(gid){
-  const g=GROUPS.find(x=>x.id===gid);
-  const msg=buildTeamMsg(g);
-  navigator.clipboard.writeText(msg).then(()=>{
-    const btn=document.getElementById('cbtn-'+gid);
-    const orig=btn.textContent;
-    btn.textContent='✅ COPIED!';
-    btn.classList.add('copied');
-    setTimeout(()=>{btn.textContent=orig;btn.classList.remove('copied');},2000);
-  }).catch(()=>{
-    // fallback for older browsers
-    const ta=document.createElement('textarea');
-    ta.value=msg;ta.style.position='fixed';ta.style.opacity='0';
-    document.body.appendChild(ta);ta.select();document.execCommand('copy');
-    document.body.removeChild(ta);
-    const btn=document.getElementById('cbtn-'+gid);
-    const orig=btn.textContent;
-    btn.textContent='✅ COPIED!';btn.classList.add('copied');
-    setTimeout(()=>{btn.textContent=orig;btn.classList.remove('copied');},2000);
-  });
-}
-
-function copyAll(){
-  const allMsg=GROUPS.map(g=>buildTeamMsg(g)).join('\n\n');
-  navigator.clipboard.writeText(allMsg).then(()=>{
-    const btn=document.querySelector('.copy-all-btn');
-    const orig=btn.textContent;
-    btn.textContent='✅ ALL TEAMS COPIED!';
-    btn.style.color='#3dd68c';btn.style.borderColor='#3dd68c';
-    setTimeout(()=>{btn.textContent=orig;btn.style.color='';btn.style.borderColor='';},2500);
-  }).catch(()=>{
-    const ta=document.createElement('textarea');
-    ta.value=allMsg;ta.style.position='fixed';ta.style.opacity='0';
-    document.body.appendChild(ta);ta.select();document.execCommand('copy');
-    document.body.removeChild(ta);
-    const btn=document.querySelector('.copy-all-btn');
-    const orig=btn.textContent;
-    btn.textContent='✅ ALL TEAMS COPIED!';
-    btn.style.color='#3dd68c';btn.style.borderColor='#3dd68c';
-    setTimeout(()=>{btn.textContent=orig;btn.style.color='';btn.style.borderColor='';},2500);
-  });
-}
-
-// Match
-function unlockAdmin(){
-  if(document.getElementById('admin-pw').value===PASS){
-    adminUnlocked=true;
-    const el=document.getElementById('lock-status');
-    el.textContent='🔓 Unlocked — mark attendance and enter scores';
-    el.style.color='#3dd68c';
-    renderMatch();
-  } else {
-    const el=document.getElementById('lock-status');
-    el.textContent='❌ Incorrect password';
-    el.style.color='#e05555';
-  }
-}
-
-function renderMatch(){
-  const players=getP();
-  const teams=getT();
-  const list=document.getElementById('match-list');
-  const empty=document.getElementById('match-empty');
+async function renderFMatch(){
+  const{data:all}=await sb.from('foundry_signups').select('*').order('username');
+  const players=all||[];
+  await loadFTeams();
+  const list=document.getElementById('f-match-list'),empty=document.getElementById('f-match-empty');
   if(!players.length){list.innerHTML='';empty.style.display='block';return;}
   empty.style.display='none';
-
-  const getGrp=pid=>{
-    for(const g of GROUPS){
-      const t=teams[g.id];
-      if(t.lead===pid||(t.members||[]).includes(pid)) return g;
-    }
-    return null;
-  };
+  const getG=uid=>{for(const g of FGROUPS){const t=fTeams[g.id]||{};if(t.lead===uid||(t.members||[]).includes(uid))return g;}return null;};
   const ORDER={g1:0,g2:1,g3:2,g4:3};
-  const sorted=[...players].sort((a,b)=>{
-    const ga=getGrp(a.pid),gb=getGrp(b.pid);
-    return ((ga?ORDER[ga.id]:99)-(gb?ORDER[gb.id]:99))||a.name.localeCompare(b.name);
-  });
-
-  const dis=adminUnlocked?'':'disabled';
+  const sorted=[...players].sort((a,b)=>{const ga=getG(a.user_id),gb=getG(b.user_id);return((ga?ORDER[ga.id]:99)-(gb?ORDER[gb.id]:99))||a.username.localeCompare(b.username);});
   let lastG=null;
   list.innerHTML=sorted.map(p=>{
-    const idx=players.findIndex(x=>x.pid===p.pid);
-    const grp=getGrp(p.pid);
-    const gk=grp?grp.id:'unassigned';
+    const grp=getG(p.user_id),gk=grp?grp.id:'unassigned';
     let hdr='';
-    if(gk!==lastG){
-      lastG=gk;
-      const lbl=grp?`${grp.label} — ${grp.name}`:'Unassigned';
-      const col=grp?`var(--${grp.cls})`:'#6a9cb8';
-      hdr=`<div class="section-hdr" style="color:${col};">${lbl}</div>`;
-    }
-    const isLead=grp&&teams[grp.id].lead===p.pid;
-    const bc=p.legion==='14'?'l14':p.legion==='19'?'l19':'none';
-    const bl=p.legion==='14'?'L14':p.legion==='19'?'L19':'ABS';
-    const ac=p.attended?'on':'off';
-    const ae=p.attended?'✅':'○';
-    const rc=p.attended?'attended':'absent';
-    return `${hdr}<div class="player-row ${rc}">
-      <button class="attend-btn ${ac}" onclick="togAttend(${idx})" ${dis}>${ae}</button>
-      <div class="name-col">
-        <div class="player-name">${isLead?'⭐ ':''}${esc(p.name)}</div>
-        <div class="player-id">ID: ${esc(p.pid)} · 🌀 ${esc(p.teleports)}</div>
+    if(gk!==lastG){lastG=gk;const lbl=grp?`${grp.label} — ${grp.name}`:'Unassigned';const col=grp?`var(--${grp.cls})`:'#6a9cb8';hdr=`<div class="shdr" style="color:${col};">${lbl}</div>`;}
+    const isLead=grp&&fTeams[grp.id]?.lead===p.user_id;
+    const bc=p.legion==='14'?'l14':p.legion==='19'?'l19':'abs';
+    return `${hdr}<div class="prow ${p.attended?'yes':'no'}">
+      <button class="abtn ${p.attended?'on':'off'}" onclick="togF('${p.user_id}',${!p.attended})">${p.attended?'✅':'○'}</button>
+      <div class="ncol"><div class="pname">${isLead?'⭐ ':''}${esc(p.username)}</div><div class="pid">ID: ${esc(p.player_id)} · 🌀 ${esc(p.teleports)}</div></div>
+      <span class="badge ${bc}">${p.legion==='14'?'L14':p.legion==='19'?'L19':'ABS'}</span>
+      <input class="sinput" type="text" placeholder="Score" value="${esc(p.score||'')}" onchange="scoreF('${p.user_id}',this.value)">
+    </div>`;
+  }).join('');
+}
+async function togF(uid,val){await sb.from('foundry_signups').update({attended:val}).eq('user_id',uid);renderFMatch();}
+async function scoreF(uid,val){await sb.from('foundry_signups').update({score:val}).eq('user_id',uid);}
+async function renderFArchive(){
+  const{data}=await sb.from('foundry_archive').select('*').order('created_at',{ascending:false});
+  renderArchiveList(data,'f-archive-list','f-archive-empty');
+}
+
+// ===== BEAR TRAP =====
+async function prefillBearTrap(){
+  const{data}=await sb.from('beartrap_signups').select('*').eq('user_id',CU.id).maybeSingle();
+  if(data){
+    document.getElementById('bt-already').style.display='block';
+    document.getElementById('bt-name').value=data.username||'';
+    document.getElementById('bt-id').value=data.player_id||'';
+    btTraps=(data.traps||[]);
+    btTraps.forEach(t=>document.getElementById('bt-t'+t).classList.add('sel'));
+  } else {
+    document.getElementById('bt-already').style.display='none';
+    const n=CU.user_metadata?.username;if(n)document.getElementById('bt-name').value=n;
+  }
+}
+function toggleTrap(t){
+  const idx=btTraps.indexOf(t);
+  if(idx>=0)btTraps.splice(idx,1);else btTraps.push(t);
+  ['1','2','3'].forEach(x=>{
+    const el=document.getElementById('bt-t'+x);
+    el.classList.toggle('sel',btTraps.includes(x));
+  });
+}
+async function submitBearTrap(){
+  const name=document.getElementById('bt-name').value.trim(),pid=document.getElementById('bt-id').value.trim();
+  if(!name||!pid){alert('Please fill in all fields.');return;}
+  if(!btTraps.length){alert('Select at least one trap.');return;}
+  const{error}=await sb.from('beartrap_signups').upsert({user_id:CU.id,username:name,player_id:pid,traps:btTraps,trap1_score:'',trap2_score:'',trap3_score:'',attended:false},{onConflict:'user_id'});
+  if(error){alert(error.message);return;}
+  document.getElementById('bt-already').style.display='block';
+  showFlash('bt-flash','✅ Sign-up saved!');
+}
+async function renderBTScores(){
+  const{data:all}=await sb.from('beartrap_signups').select('*').order('trap'+curTrap+'_score',{ascending:false});
+  const players=(all||[]).filter(p=>p.traps&&p.traps.includes(String(curTrap)));
+  const list=document.getElementById('bt-scores-list'),empty=document.getElementById('bt-scores-empty');
+  if(!players.length){list.innerHTML='';empty.style.display='block';return;}
+  empty.style.display='none';
+  const sorted=[...players].sort((a,b)=>{
+    const sa=Number(String(a['trap'+curTrap+'_score']||'0').replace(/,/g,''));
+    const sb2=Number(String(b['trap'+curTrap+'_score']||'0').replace(/,/g,''));
+    return sb2-sa;
+  });
+  list.innerHTML=sorted.map((p,i)=>{
+    const score=p['trap'+curTrap+'_score']||'';
+    const rankCls=i===0?'r1':i===1?'r2':i===2?'r3':'rn';
+    return `<div class="lbrow">
+      <span class="lbrank ${rankCls}">${i+1}</span>
+      <div class="ncol"><div class="pname">${esc(p.username)}</div><div class="pid">ID: ${esc(p.player_id)}</div></div>
+      <button class="abtn ${p.attended?'on':'off'}" onclick="togBT('${p.user_id}',${!p.attended})">${p.attended?'✅':'○'}</button>
+      <input class="sinput" style="width:110px;" type="text" placeholder="Damage pts" value="${esc(score)}" onchange="scoreBT('${p.user_id}',this.value)">
+    </div>`;
+  }).join('');
+}
+function showTrap(n){
+  curTrap=n;
+  document.querySelectorAll('.ttab').forEach(t=>t.classList.remove('active'));
+  document.getElementById('trap-tab-'+n).classList.add('active');
+  renderBTScores();
+}
+async function togBT(uid,val){await sb.from('beartrap_signups').update({attended:val}).eq('user_id',uid);renderBTScores();}
+async function scoreBT(uid,val){await sb.from('beartrap_signups').update({'trap'+curTrap+'_score':val}).eq('user_id',uid);}
+async function renderBTArchive(){
+  const{data}=await sb.from('beartrap_archive').select('*').order('created_at',{ascending:false});
+  renderArchiveList(data,'bt-archive-list','bt-archive-empty');
+}
+
+// ===== CANYON =====
+async function prefillCanyon(){
+  const{data}=await sb.from('canyon_signups').select('*').eq('user_id',CU.id).maybeSingle();
+  if(data){
+    document.getElementById('c-already').style.display='block';
+    document.getElementById('cf-name').value=data.username||'';
+    document.getElementById('cf-id').value=data.player_id||'';
+    if(data.legion)selC(data.legion);
+  } else {
+    document.getElementById('c-already').style.display='none';
+    const n=CU.user_metadata?.username;if(n)document.getElementById('cf-name').value=n;
+  }
+}
+function selC(v){cLegion=v;['14','19','none'].forEach(x=>document.getElementById('cl-'+x).className='rbtn'+(x===v?' sel':''));}
+async function submitCanyon(){
+  const name=document.getElementById('cf-name').value.trim(),pid=document.getElementById('cf-id').value.trim();
+  if(!name||!pid||!cLegion){alert('Please fill in all fields.');return;}
+  const{error}=await sb.from('canyon_signups').upsert({user_id:CU.id,username:name,player_id:pid,legion:cLegion,attended:false,score:''},{onConflict:'user_id'});
+  if(error){alert(error.message);return;}
+  document.getElementById('c-already').style.display='block';
+  showFlash('c-flash','✅ Sign-up saved!');
+}
+async function renderCRoster(){
+  const{data:all}=await sb.from('canyon_signups').select('*').order('username');
+  const players=all||[];
+  const fil=cFilter==='all'?players:players.filter(p=>p.legion===cFilter);
+  document.getElementById('cs-total').textContent=players.length;
+  document.getElementById('cs-14').textContent=players.filter(p=>p.legion==='14').length;
+  document.getElementById('cs-19').textContent=players.filter(p=>p.legion==='19').length;
+  const list=document.getElementById('c-roster-list'),empty=document.getElementById('c-roster-empty');
+  if(!fil.length){list.innerHTML='';empty.style.display='block';return;}
+  empty.style.display='none';
+  list.innerHTML=fil.map(p=>`<div class="prow">
+    <div class="ncol"><div class="pname">${esc(p.username)}</div><div class="pid">ID: ${esc(p.player_id)}</div></div>
+    <span class="badge ${p.legion==='14'?'l14':p.legion==='19'?'l19':'abs'}">${p.legion==='14'?'L14':p.legion==='19'?'L19':'ABS'}</span>
+  </div>`).join('');
+}
+function setCF(f,btn){cFilter=f;document.querySelectorAll('#canyon-roster .fbtn').forEach(b=>b.classList.remove('active'));btn.classList.add('active');renderCRoster();}
+
+async function loadCTeams(){
+  const{data}=await sb.from('canyon_teams').select('*').eq('id',1).maybeSingle();
+  if(data){cTeams=data.assignments||{};cMeta=data.meta||{section:'',legion:'14'};}
+  else{cTeams={};CROUTES.forEach(r=>cTeams[r.id]={lead:'',members:[]});cMeta={section:'',legion:'14'};}
+}
+async function saveCanyonMeta(){
+  cMeta.section=document.getElementById('c-section').value;
+  cMeta.legion=document.getElementById('c-legion-sel').value;
+}
+async function renderCTeams(){
+  await loadCTeams();
+  if(cMeta.section)document.getElementById('c-section').value=cMeta.section;
+  if(cMeta.legion)document.getElementById('c-legion-sel').value=cMeta.legion;
+  const{data:all}=await sb.from('canyon_signups').select('*').order('username');
+  const players=(all||[]).filter(p=>p.legion===(cMeta.legion||'14')||p.legion==='none');
+  const assigned=new Set();
+  CROUTES.forEach(r=>{const t=cTeams[r.id]||{};if(t.lead)assigned.add(t.lead);(t.members||[]).forEach(id=>assigned.add(id));});
+  const unassigned=players.filter(p=>!assigned.has(p.user_id));
+  const ubox=document.getElementById('c-ubox');
+  if(players.length){ubox.style.display='block';document.getElementById('c-ucnt').textContent=unassigned.length;
+    document.getElementById('c-ulist').innerHTML=unassigned.length?unassigned.map(p=>`<span class="uchip">👤 ${esc(p.username)}</span>`).join(''):'<span style="font-size:0.82rem;color:#3dd68c;">✅ All assigned!</span>';}
+  document.getElementById('c-route-grid').innerHTML=CROUTES.map(r=>{
+    const t=cTeams[r.id]||{lead:'',members:[]};
+    const lp=players.find(p=>p.user_id===t.lead);
+    const mems=(t.members||[]).map(id=>players.find(p=>p.user_id===id)).filter(Boolean);
+    const total=(lp?1:0)+mems.length;
+    const lOpts=players.filter(p=>!(t.members||[]).includes(p.user_id));
+    const aOpts=players.filter(p=>p.user_id!==t.lead&&!(t.members||[]).includes(p.user_id));
+    return `<div class="rcard ${r.cls}">
+      <div class="rhead"><span class="rlabel">${r.emoji} ${r.label}</span><span class="rcnt">${total}p</span></div>
+      <div class="rbody">
+        <div style="grid-column:1/-1;">
+          <div class="slbl">⭐ Lead</div>
+          <select class="gsel" onchange="setCLead('${r.id}',this.value)">
+            <option value="">— No lead —</option>
+            ${lOpts.map(p=>`<option value="${esc(p.user_id)}"${p.user_id===t.lead?' selected':''}>${esc(p.username)}</option>`).join('')}
+          </select>
+        </div>
+        <div style="grid-column:1/-1;">
+          <div class="slbl">👥 Members (${mems.length})</div>
+          ${mems.map(m=>`<div class="mchip"><span class="mn">${esc(m.username)}</span><button class="mr" onclick="removeCMem('${r.id}','${m.user_id}')">✕</button></div>`).join('')}
+          ${!mems.length?'<div class="nomem">No members yet</div>':''}
+          <div class="addrow" style="margin-top:5px;">
+            <select id="cadd-${r.id}"><option value="">— Add —</option>${aOpts.map(p=>`<option value="${esc(p.user_id)}">${esc(p.username)}</option>`).join('')}</select>
+            <button onclick="addCMem('${r.id}')">+ ADD</button>
+          </div>
+        </div>
       </div>
-      <span class="badge ${bc}">${bl}</span>
-      <input class="score-input" type="text" placeholder="Score" value="${esc(p.score||'')}"
-        onchange="saveScore(${idx},this.value)" ${dis}>
+    </div>`;
+  }).join('');
+  renderCCopyCards(players);
+}
+function setCLead(rid,uid){if(!cTeams[rid])cTeams[rid]={lead:'',members:[]};cTeams[rid].members=(cTeams[rid].members||[]).filter(p=>p!==uid);cTeams[rid].lead=uid;renderCTeams();}
+function addCMem(rid){const s=document.getElementById('cadd-'+rid),uid=s.value;if(!uid)return;if(!cTeams[rid])cTeams[rid]={lead:'',members:[]};if(!cTeams[rid].members.includes(uid))cTeams[rid].members.push(uid);renderCTeams();}
+function removeCMem(rid,uid){if(!cTeams[rid])return;cTeams[rid].members=(cTeams[rid].members||[]).filter(p=>p!==uid);renderCTeams();}
+async function saveCanyonTeams(){
+  await saveCanyonMeta();
+  const{error}=await sb.from('canyon_teams').upsert({id:1,assignments:cTeams,meta:cMeta});
+  if(error){alert(error.message);return;}
+  const btn=document.querySelector('#canyon-teams .btn-purple');
+  btn.textContent='✅ SAVED!';setTimeout(()=>btn.textContent='💾 SAVE ROUTES',2000);
+  document.getElementById('c-copy-section').style.display='block';
+}
+function buildCMsg(r,players){
+  const t=cTeams[r.id]||{};const lp=players.find(p=>p.user_id===t.lead);
+  const mems=(t.members||[]).map(id=>players.find(p=>p.user_id===id)).filter(Boolean);
+  const section=cMeta.section||'?';const legion=cMeta.legion||'14';
+  let m=r.emoji+' '+r.label+' — Canyon '+legion+' UTC ('+section+' Zone)\n━━━━━━━━━━━━━━━\n';
+  m+='⭐ Lead: '+(lp?lp.username:'TBD')+'\n';
+  if(mems.length){m+='👥 Team:\n';mems.forEach(p=>{m+='  • '+p.username+'\n';});}
+  return m+'━━━━━━━━━━━━━━━';
+}
+async function renderCCopyCards(players){
+  if(!players){const{data}=await sb.from('canyon_signups').select('*');players=data||[];}
+  document.getElementById('c-copy-section').style.display='block';
+  document.getElementById('c-copy-grid').innerHTML=CROUTES.map(r=>`<div class="ccard ${r.cls}">
+    <div class="cprev">${esc(buildCMsg(r,players))}</div>
+    <button class="cbtn" id="ccbtn-${r.id}" onclick="copyCRoute('${r.id}')">${r.emoji} COPY ${r.label}</button>
+  </div>`).join('');
+}
+async function copyCRoute(rid){
+  const{data}=await sb.from('canyon_signups').select('*');
+  const r=CROUTES.find(x=>x.id===rid);copyText(buildCMsg(r,data||[]),'ccbtn-'+rid);
+}
+async function copyAllCanyon(){
+  const{data}=await sb.from('canyon_signups').select('*');
+  copyText(CROUTES.map(r=>buildCMsg(r,data||[])).join('\n\n'),null,document.querySelector('#canyon-teams .copy-all-btn'));
+}
+async function renderCMatch(){
+  const{data:all}=await sb.from('canyon_signups').select('*').order('username');
+  const players=all||[];
+  await loadCTeams();
+  const list=document.getElementById('c-match-list'),empty=document.getElementById('c-match-empty');
+  if(!players.length){list.innerHTML='';empty.style.display='block';return;}
+  empty.style.display='none';
+  const getR=uid=>{for(const r of CROUTES){const t=cTeams[r.id]||{};if(t.lead===uid||(t.members||[]).includes(uid))return r;}return null;};
+  const sorted=[...players].sort((a,b)=>{const ra=getR(a.user_id),rb=getR(b.user_id);const ORDER={r1:0,r2:1,r3:2,r4:3,r5:4};return((ra?ORDER[ra.id]:99)-(rb?ORDER[rb.id]:99))||a.username.localeCompare(b.username);});
+  let lastR=null;
+  list.innerHTML=sorted.map(p=>{
+    const route=getR(p.user_id),rk=route?route.id:'unassigned';
+    let hdr='';
+    if(rk!==lastR){lastR=rk;const lbl=route?`${route.emoji} ${route.label}`:'Unassigned';const col=route?`var(--${route.cls})`:'#6a9cb8';hdr=`<div class="shdr" style="color:${col};">${lbl}</div>`;}
+    const isLead=route&&cTeams[route.id]?.lead===p.user_id;
+    return `${hdr}<div class="prow ${p.attended?'yes':'no'}">
+      <button class="abtn ${p.attended?'on':'off'}" onclick="togC('${p.user_id}',${!p.attended})">${p.attended?'✅':'○'}</button>
+      <div class="ncol"><div class="pname">${isLead?'⭐ ':''}${esc(p.username)}</div><div class="pid">ID: ${esc(p.player_id)}</div></div>
+      <input class="sinput" type="text" placeholder="Score" value="${esc(p.score||'')}" onchange="scoreC('${p.user_id}',this.value)">
+    </div>`;
+  }).join('');
+}
+async function togC(uid,val){await sb.from('canyon_signups').update({attended:val}).eq('user_id',uid);renderCMatch();}
+async function scoreC(uid,val){await sb.from('canyon_signups').update({score:val}).eq('user_id',uid);}
+async function renderCArchive(){
+  const{data}=await sb.from('canyon_archive').select('*').order('created_at',{ascending:false});
+  renderArchiveList(data,'c-archive-list','c-archive-empty');
+}
+
+// ===== ARCHIVE & RESET =====
+async function archiveEvent(ev){
+  const nameEl=document.getElementById(ev==='foundry'?'f-evname':ev==='beartrap'?'bt-evname':'c-evname');
+  const flashId=ev==='foundry'?'f-arch-flash':ev==='beartrap'?'bt-arch-flash':'c-arch-flash';
+  const evName=nameEl.value.trim();
+  if(!evName){alert('Enter an event name.');return;}
+  if(!confirm(`Archive "${evName}" and reset for next event?`))return;
+  if(ev==='foundry'){
+    const{data:players}=await sb.from('foundry_signups').select('*');
+    const{data:teams}=await sb.from('foundry_teams').select('*').eq('id',1).maybeSingle();
+    await sb.from('foundry_archive').insert({event_name:evName,players:players||[],teams:teams?.assignments||{}});
+    await sb.from('foundry_signups').update({attended:false,score:''}).neq('user_id','00000000-0000-0000-0000-000000000000');
+    await sb.from('foundry_teams').upsert({id:1,assignments:{}});
+  } else if(ev==='beartrap'){
+    const{data:players}=await sb.from('beartrap_signups').select('*');
+    await sb.from('beartrap_archive').insert({event_name:evName,players:players||[]});
+    await sb.from('beartrap_signups').update({attended:false,trap1_score:'',trap2_score:'',trap3_score:''}).neq('user_id','00000000-0000-0000-0000-000000000000');
+  } else {
+    const{data:players}=await sb.from('canyon_signups').select('*');
+    const{data:teams}=await sb.from('canyon_teams').select('*').eq('id',1).maybeSingle();
+    await sb.from('canyon_archive').insert({event_name:evName,players:players||[],teams:teams?.assignments||{}});
+    await sb.from('canyon_signups').update({attended:false,score:''}).neq('user_id','00000000-0000-0000-0000-000000000000');
+    await sb.from('canyon_teams').upsert({id:1,assignments:{},meta:{}});
+  }
+  nameEl.value='';
+  showFlash(flashId,'✅ Archived and reset for next event!');
+}
+
+function renderArchiveList(data,listId,emptyId){
+  const list=document.getElementById(listId),empty=document.getElementById(emptyId);
+  if(!data||!data.length){list.innerHTML='';empty.style.display='block';return;}
+  empty.style.display='none';
+  list.innerHTML=data.map(ev=>{
+    const players=ev.players||[];
+    const date=new Date(ev.created_at).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'});
+    return `<div class="aev">
+      <div class="aev-hdr"><span class="aev-title">📦 ${esc(ev.event_name)}</span><span class="aev-date">${date}</span></div>
+      <div class="aev-stats">
+        <span class="aev-stat">Players: <span>${players.length}</span></span>
+        <span class="aev-stat">Attended: <span>${players.filter(p=>p.attended).length}</span></span>
+      </div>
+      <details><summary style="cursor:pointer;font-size:0.78rem;color:var(--frost);margin-top:4px;">View roster ▼</summary>
+        <div style="margin-top:7px;">${players.map(p=>`<div class="prow ${p.attended?'yes':'no'}" style="margin-bottom:4px;">
+          <div class="ncol"><div class="pname">${esc(p.username)}</div></div>
+          <span style="font-size:0.75rem;color:${p.attended?'var(--green)':'#6a9cb8'}">${p.attended?'✅':'-'}</span>
+          ${p.score?`<span style="font-size:0.75rem;color:var(--gold);">🏆${esc(p.score)}</span>`:''}
+        </div>`).join('')}</div>
+      </details>
     </div>`;
   }).join('');
 }
 
-function togAttend(idx){
-  if(!adminUnlocked) return;
-  const p=getP(); p[idx].attended=!p[idx].attended; saveP(p); renderMatch();
-}
-function saveScore(idx,val){
-  if(!adminUnlocked) return;
-  const p=getP(); p[idx].score=val; saveP(p);
-}
-
-function exportCSV(){
-  const players=getP(),teams=getT();
-  if(!players.length){alert('No data.');return;}
-  const getG=pid=>{for(const g of GROUPS){const t=teams[g.id];if(t.lead===pid||(t.members||[]).includes(pid))return g;}return null;};
-  const hdr='Username,Player ID,Legion,Teleports,Group,Team Lead,Attended,Score\n';
-  const rows=players.map(p=>{
-    const g=getG(p.pid);
-    const isLead=g&&teams[g.id].lead===p.pid?'Yes':'No';
-    return `"${p.name}","${p.pid}","${p.legion==='14'?'Legion 14':p.legion==='19'?'Legion 19':'Abstain'}","${p.teleports}","${g?g.label:''}","${isLead}","${p.attended?'Yes':'No'}","${p.score||''}"`;
-  }).join('\n');
+// ===== UTILITIES =====
+async function exportCSV(table,prefix){
+  const{data}=await sb.from(table).select('*').order('username');
+  if(!data||!data.length){alert('No data.');return;}
+  const keys=Object.keys(data[0]).filter(k=>!['id','user_id'].includes(k));
+  const hdr=keys.join(',')+'\n';
+  const rows=data.map(p=>keys.map(k=>`"${String(p[k]||'').replace(/"/g,'""')}"`).join(',')).join('\n');
   const a=document.createElement('a');
   a.href=URL.createObjectURL(new Blob([hdr+rows],{type:'text/csv'}));
-  a.download='foundry_roster.csv';a.click();
+  a.download=prefix+'_roster.csv';a.click();
 }
-
-function clearAll(){
-  if(!confirm('⚠️ Clear ALL data? Cannot be undone.')) return;
-  if(prompt('Admin password:')!==PASS){alert('Incorrect.');return;}
-  localStorage.removeItem('wos_p');
-  localStorage.removeItem('wos_t');
-  renderRoster();renderTeams();renderMatch();
+function copyText(msg,btnId,btnEl){
+  try{navigator.clipboard.writeText(msg);}catch{const ta=document.createElement('textarea');ta.value=msg;document.body.appendChild(ta);ta.select();document.execCommand('copy');document.body.removeChild(ta);}
+  const btn=btnId?document.getElementById(btnId):btnEl;
+  if(!btn)return;const orig=btn.textContent;btn.textContent='✅ COPIED!';btn.classList.add('copied');
+  setTimeout(()=>{btn.textContent=orig;btn.classList.remove('copied');},2000);
 }
+function showFlash(id,msg){const el=document.getElementById(id);el.textContent=msg;el.style.display='block';setTimeout(()=>el.style.display='none',3500);}
 
-renderRoster();
+init();
 </script>
-
 </body>
 </html>
